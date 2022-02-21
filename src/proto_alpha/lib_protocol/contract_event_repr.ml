@@ -1,7 +1,7 @@
 (*****************************************************************************)
 (*                                                                           *)
 (* Open Source License                                                       *)
-(* Copyright (c) 2021 Nomadic Labs <contact@nomadic-labs.com>                *)
+(* Copyright (c) 2018 Dynamic Ledger Solutions, Inc. <contact@tezos.com>     *)
 (*                                                                           *)
 (* Permission is hereby granted, free of charge, to any person obtaining a   *)
 (* copy of this software and associated documentation files (the "Software"),*)
@@ -23,36 +23,15 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-(** Testing
-    -------
-    Component:    Protocol
-    Invocation:   dune runtest src/proto_alpha/lib_protocol/test/integration/michelson
-    Subject:      Integration > Michelson
-*)
+(* Canonical contract event log entry *)
+type t = {tag : string; data : Script_repr.expr}
 
-let () =
-  Alcotest_lwt.run
-    "protocol > integration > michelson"
-    [
-      ("global table of constants", Test_global_constants_storage.tests);
-      ("interpretation", Test_interpretation.tests);
-      ("lazy storage diff", Test_lazy_storage_diff.tests);
-      ("sapling", Test_sapling.tests);
-      ("script typed ir size", Test_script_typed_ir_size.tests);
-      ("temp big maps", Test_temp_big_maps.tests);
-      ("ticket balance key", Test_ticket_balance_key.tests);
-      ("ticket scanner", Test_ticket_scanner.tests);
-      ("ticket storage", Test_ticket_storage.tests);
-      ("ticket lazy storage diff", Test_ticket_lazy_storage_diff.tests);
-      ("ticket operations diff", Test_ticket_operations_diff.tests);
-      ("ticket accounting", Test_ticket_accounting.tests);
-      ("ticket balance", Test_ticket_balance.tests);
-      ("ticket manager", Test_ticket_manager.tests);
-      ("timelock", Test_timelock.tests);
-      ("typechecking", Test_typechecking.tests);
-      ("script cache", Test_script_cache.tests);
-      ("block time instructions", Test_block_time_instructions.tests);
-      ("annotations", Test_annotations.tests);
-      ("event logging", Test_emit.tests);
-    ]
-  |> Lwt_main.run
+(* Serialization scheme for an event log entry in Micheline format *)
+let encoding =
+  let open Data_encoding in
+  let encoding =
+    obj2 (req "tag" string) (req "data" Script_repr.expr_encoding)
+  in
+  let into (tag, data) = {tag; data} in
+  let from {tag; data} = (tag, data) in
+  conv from into encoding

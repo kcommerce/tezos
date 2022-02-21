@@ -1866,7 +1866,7 @@ for under/overflows.
 Operations on contracts
 ~~~~~~~~~~~~~~~~~~~~~~~
 
--  ``CREATE_CONTRACT { storage 'g ; parameter 'p ; code ... }``:
+-  ``CREATE_CONTRACT { storage 'g ; parameter 'p ; event 'e; code ... }``:
    Forge a new contract from a literal.
 
 ::
@@ -2338,7 +2338,18 @@ Operations on timelock
 
    ::  chest_key : chest : nat : 'S -> or bytes bool : 'S
 
+Events
+~~~~~~
 
+- ``EMIT``: constructs an event log entry which will be written into the transaction receipt
+  after the successful execution of this contract. It accepts a string value as a tag to the
+  emitted event, as well as data attached to this event. The attached data is of type ``event``
+  that is declared at the top-level alongside ``storage`` and ``parameter``.
+  See :doc:`Event <event>` for more information.
+
+::
+    
+    ::  string : 'event : 'S -> 'S
 
 Removed instructions
 ~~~~~~~~~~~~~~~~~~~~
@@ -3750,6 +3761,7 @@ Full grammar
       | SPLIT_TICKET
       | JOIN_TICKETS
       | OPEN_CHEST
+      | EMIT
     <type> ::=
       | <comparable type>
       | option <type>

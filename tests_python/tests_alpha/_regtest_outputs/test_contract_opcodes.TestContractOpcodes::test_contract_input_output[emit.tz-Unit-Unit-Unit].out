@@ -1,0 +1,45 @@
+tests_alpha/test_contract_opcodes.py::TestContractOpcodes::test_contract_input_output[emit.tz-Unit-Unit-Unit]
+
+storage
+  Unit
+emitted operations
+  
+big_map diff
+  
+trace
+  - location: 11 (remaining gas: 1039987.803 units remaining)
+    [ (Pair Unit Unit) ]
+  - location: 11 (remaining gas: 1039987.793 units remaining)
+    [ 10
+      (Pair Unit Unit) ]
+  - location: 14 (remaining gas: 1039987.783 units remaining)
+    [ (Left 10)
+      (Pair Unit Unit) ]
+  - location: 16 (remaining gas: 1039987.773 units remaining)
+    [ "this is number"
+      (Left 10)
+      (Pair Unit Unit) ]
+  - location: 19 (remaining gas: 1039987.566 units remaining)
+    [ (Pair Unit Unit) ]
+  - location: 20 (remaining gas: 1039987.556 units remaining)
+    [ "lorem ipsum"
+      (Pair Unit Unit) ]
+  - location: 23 (remaining gas: 1039987.546 units remaining)
+    [ (Right "lorem ipsum")
+      (Pair Unit Unit) ]
+  - location: 25 (remaining gas: 1039987.536 units remaining)
+    [ "Cicero"
+      (Right "lorem ipsum")
+      (Pair Unit Unit) ]
+  - location: 28 (remaining gas: 1039987.329 units remaining)
+    [ (Pair Unit Unit) ]
+  - location: 29 (remaining gas: 1039987.319 units remaining)
+    [  ]
+  - location: 30 (remaining gas: 1039987.309 units remaining)
+    [ Unit ]
+  - location: 31 (remaining gas: 1039987.299 units remaining)
+    [ {}
+      Unit ]
+  - location: 33 (remaining gas: 1039987.289 units remaining)
+    [ (Pair {} Unit) ]
+

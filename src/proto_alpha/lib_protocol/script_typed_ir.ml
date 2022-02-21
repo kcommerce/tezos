@@ -455,6 +455,7 @@ type ('arg, 'storage) script =
       arg_type : ('arg, _) ty;
       storage : 'storage;
       storage_type : ('storage, _) ty;
+      event_type : opt_event_ty;
       views : view_map;
       entrypoints : 'arg entrypoints;
       code_size : Cache_memory_helpers.sint;
@@ -1124,6 +1125,11 @@ and ('before_top, 'before, 'result_top, 'result) kinstr =
            'r,
            'f )
          kinstr
+  | IEmit :
+      (Script_string.t, 'a * ('b * 's)) kinfo
+      * ('a, _) ty
+      * ('b, 's, 'r, 'f) kinstr
+      -> (Script_string.t, 'a * ('b * 's), 'r, 'f) kinstr
   (*
      Internal control instructions
      -----------------------------
@@ -1283,6 +1289,10 @@ and ('ty, 'comparable) ty =
   | Ticket_t : 'a comparable_ty * 'a ticket ty_metadata -> ('a ticket, no) ty
   | Chest_key_t : (Script_timelock.chest_key, no) ty
   | Chest_t : (Script_timelock.chest, no) ty
+
+and opt_event_ty =
+  | No_event_ty : opt_event_ty
+  | Some_event_ty : ('e, _) ty -> opt_event_ty
 
 and 'ty comparable_ty = ('ty, yes) ty
 
@@ -1572,6 +1582,7 @@ let kinfo_of_kinstr : type a s b f. (a, s, b, f) kinstr -> (a, s) kinfo =
   | IHalt kinfo -> kinfo
   | ILog (kinfo, _, _, _) -> kinfo
   | IOpen_chest (kinfo, _) -> kinfo
+  | IEmit (kinfo, _, _) -> kinfo
 
 type kinstr_rewritek = {
   apply : 'b 'u 'r 'f. ('b, 'u, 'r, 'f) kinstr -> ('b, 'u, 'r, 'f) kinstr;
@@ -1780,6 +1791,7 @@ let kinstr_rewritek :
   | IHalt kinfo -> IHalt kinfo
   | ILog (kinfo, event, logger, k) -> ILog (kinfo, event, logger, k)
   | IOpen_chest (kinfo, k) -> IOpen_chest (kinfo, f.apply k)
+  | IEmit (kinfo, ty, k) -> IEmit (kinfo, ty, f.apply k)
 
 let meta_basic = {size = Type_size.one}
 
@@ -2176,6 +2188,7 @@ let kinstr_traverse i init f =
     | ISplit_ticket (_, k) -> (next [@ocaml.tailcall]) k
     | IJoin_tickets (_, _, k) -> (next [@ocaml.tailcall]) k
     | IOpen_chest (_, k) -> (next [@ocaml.tailcall]) k
+    | IEmit (_, _, k) -> (next [@ocaml.tailcall]) k
     | IHalt _ -> (return [@ocaml.tailcall]) ()
     | ILog (_, _, _, k) -> (next [@ocaml.tailcall]) k
   in

@@ -70,6 +70,7 @@ module CamlinternalFormatBasics = struct include CamlinternalFormatBasics end
    script_repr.mli script_repr.ml
    cache_memory_helpers.ml
    contract_repr.mli contract_repr.ml
+   contract_event_repr.mli contract_event_repr.ml
    indexable.mli indexable.ml
    entrypoint_repr.mli entrypoint_repr.ml
    tx_rollup_level_repr.mli tx_rollup_level_repr.ml
@@ -260,6 +261,7 @@ module CamlinternalFormatBasics = struct include CamlinternalFormatBasics end
    script_repr.mli script_repr.ml
    cache_memory_helpers.ml
    contract_repr.mli contract_repr.ml
+   contract_event_repr.mli contract_event_repr.ml
    indexable.mli indexable.ml
    entrypoint_repr.mli entrypoint_repr.ml
    tx_rollup_level_repr.mli tx_rollup_level_repr.ml
@@ -450,6 +452,7 @@ module CamlinternalFormatBasics = struct include CamlinternalFormatBasics end
    script_repr.mli script_repr.ml
    cache_memory_helpers.ml
    contract_repr.mli contract_repr.ml
+   contract_event_repr.mli contract_event_repr.ml
    indexable.mli indexable.ml
    entrypoint_repr.mli entrypoint_repr.ml
    tx_rollup_level_repr.mli tx_rollup_level_repr.ml
@@ -662,6 +665,7 @@ include Tezos_raw_protocol_alpha.Main
    Script_repr
    Cache_memory_helpers
    Contract_repr
+   Contract_event_repr
    Indexable
    Entrypoint_repr
    Tx_rollup_level_repr
@@ -893,6 +897,7 @@ include Tezos_raw_protocol_alpha.Main
    script_repr.mli script_repr.ml
    cache_memory_helpers.ml
    contract_repr.mli contract_repr.ml
+   contract_event_repr.mli contract_event_repr.ml
    indexable.mli indexable.ml
    entrypoint_repr.mli entrypoint_repr.ml
    tx_rollup_level_repr.mli tx_rollup_level_repr.ml

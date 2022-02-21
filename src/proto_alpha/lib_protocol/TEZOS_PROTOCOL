@@ -45,6 +45,7 @@
         "Script_repr",
         "Cache_memory_helpers",
         "Contract_repr",
+        "Contract_event_repr",
         "Indexable",
         "Entrypoint_repr",
         "Tx_rollup_level_repr",

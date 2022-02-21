@@ -223,6 +223,8 @@ type instruction_name =
   | N_ILog
   (* Timelock*)
   | N_IOpen_chest
+  (* Event emit *)
+  | N_IEmit
 
 type continuation_name =
   | N_KNil
@@ -408,6 +410,7 @@ let string_of_instruction_name : instruction_name -> string =
   | N_IHalt -> "N_IHalt"
   | N_ILog -> "N_ILog"
   | N_IOpen_chest -> "N_IOpen_chest"
+  | N_IEmit -> "N_IEmit"
 
 let string_of_continuation_name : continuation_name -> string =
  fun c ->
@@ -1093,6 +1096,20 @@ module Instructions = struct
 
   let open_chest log_time size =
     ir_sized_step N_IOpen_chest (binary "log_time" log_time "size" size)
+
+  (** model for I_Emit *)
+  let emit tag (data : Size.micheline_size) =
+    ir_sized_step
+      N_IEmit
+      (quaternary
+         "tag"
+         tag
+         "micheline_nodes"
+         data.traversal
+         "micheline_int_bytes"
+         data.int_bytes
+         "micheline_string_bytes"
+         data.string_bytes)
 end
 
 module Control = struct
@@ -1424,6 +1441,14 @@ let extract_ir_sized_step :
       in
       let log_time = Z.log2 Z.(one + Script_int.to_zint time) |> Size.of_int in
       Instructions.open_chest log_time plaintext_size
+  | (IEmit (_, ty, _), (tag, (data, _))) -> (
+      let unparse_res =
+        Lwt_main.run (Script_ir_translator.unparse_data ctxt Optimized ty data)
+      in
+      match unparse_res with
+      | Ok (node, _) ->
+          Instructions.emit (Size.script_string tag) (Size.of_micheline node)
+      | Error _ -> Stdlib.failwith "IEmit workload: could not unparse")
   | (IMin_block_time _, _) -> Instructions.min_block_time
 
 let extract_control_trace (type bef_top bef aft_top aft)
@@ -1532,7 +1557,7 @@ let extract_deps_continuation (type bef_top bef aft_top aft) ctxt step_constants
     | Error errs ->
         Format.eprintf "%a@." Error_monad.pp_print_trace errs ;
         raise (Failure "Interpreter_workload.extract_deps: error in step")
-    | Ok (_aft_top, _aft, _outdated_ctxt, _gas) ->
+    | Ok (_aft_top, _aft, _outdated_ctxt, _gas, _events) ->
         (* ((aft_top, aft), List.rev !trace, outdated_ctxt, gas) *)
         List.rev !trace
   with Stop_bench -> List.rev !trace

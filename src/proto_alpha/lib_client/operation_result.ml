@@ -442,6 +442,18 @@ let pp_manager_operation_contents_and_result ppf
               Michelson_v1_printer.print_big_map_diff
               lazy_storage_diff)
   in
+  let pp_events ppf = function
+    | [] -> ()
+    | events ->
+        let pp ppf Contract_event.{tag; data} =
+          Format.fprintf ppf "@,Tag:@ %s" tag ;
+          Format.fprintf ppf "@,Data:@ %a" Michelson_v1_printer.print_expr data
+        in
+        Format.pp_print_list
+          (fun ppf event -> Format.fprintf ppf "@,@[<v 2>Event:@ %a@]" pp event)
+          ppf
+          events
+  in
   let pp_transaction_result = function
     | Transaction_to_contract_result
         {
@@ -453,6 +465,7 @@ let pp_manager_operation_contents_and_result ppf
           paid_storage_size_diff;
           lazy_storage_diff;
           allocated_destination_contract = _;
+          events;
         } ->
         (match originated_contracts with
         | [] -> ()
@@ -481,6 +494,7 @@ let pp_manager_operation_contents_and_result ppf
             ppf
             "@,Paid storage size diff: %s bytes"
             (Z.to_string paid_storage_size_diff) ;
+        Format.fprintf ppf "%a" pp_events events ;
         Format.fprintf ppf "@,Consumed gas: %a" Gas.Arith.pp consumed_gas ;
         pp_balance_updates_opt ppf balance_updates
     | Transaction_to_tx_rollup_result

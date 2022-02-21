@@ -1,0 +1,17 @@
+{ parameter unit;
+  storage unit;
+  event (or (nat %int) (string %str));
+  code { DROP;
+         PUSH string "right";
+         RIGHT nat;
+         PUSH string "tag1";
+         EMIT;
+         
+         PUSH nat 2;
+         LEFT string;
+         PUSH string "tag2";
+         EMIT;
+         
+         UNIT;
+         NIL operation;
+         PAIR; } }

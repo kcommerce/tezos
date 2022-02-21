@@ -331,6 +331,7 @@ let origination_operation ctxt ~src ~script ~orig_contract =
                storage;
                code = _;
                arg_type = _;
+               event_type = _;
                views = _;
                entrypoints = _;
                code_size = _;

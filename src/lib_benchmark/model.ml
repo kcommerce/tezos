@@ -36,6 +36,9 @@ let arity_2 = Succ_arity arity_1
 
 let arity_3 = Succ_arity arity_2
 
+(** for models with 4 free variables *)
+let arity_4 = Succ_arity arity_3
+
 type ('a, 'b) eq = Eq : ('a, 'a) eq
 
 let rec elim_arities :

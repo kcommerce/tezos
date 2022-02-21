@@ -88,6 +88,7 @@ type toplevel = {
   code_field : Script.node;
   arg_type : Script.node;
   storage_type : Script.node;
+  event_type : Script.node option;
   views : Script_typed_ir.view_map;
 }
 
@@ -101,6 +102,7 @@ type ('arg, 'storage) code =
         Script_typed_ir.lambda;
       arg_type : ('arg, _) Script_typed_ir.ty;
       storage_type : ('storage, _) Script_typed_ir.ty;
+      event_type : Script_typed_ir.opt_event_ty;
       views : Script_typed_ir.view_map;
       entrypoints : 'arg Script_typed_ir.entrypoints;
       code_size : Cache_memory_helpers.sint;
@@ -229,6 +231,7 @@ val parse_comparable_data :
   Script.node ->
   ('a * context) tzresult Lwt.t
 
+(* Parsing a Micheline node data into an IR-typed data*)
 val parse_data :
   ?type_logger:type_logger ->
   context ->
@@ -238,6 +241,7 @@ val parse_data :
   Script.node ->
   ('a * context) tzresult Lwt.t
 
+(* Unparsing an IR-typed data back into a Micheline node data *)
 val unparse_data :
   context ->
   unparsing_mode ->

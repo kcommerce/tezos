@@ -32,6 +32,7 @@ type prim =
   | K_parameter
   | K_storage
   | K_code
+  | K_event
   | D_False
   | D_Elt
   | D_Left
@@ -149,6 +150,7 @@ type prim =
   | I_READ_TICKET
   | I_SPLIT_TICKET
   | I_JOIN_TICKETS
+  | I_EMIT
   | T_bool
   | T_contract
   | T_int
@@ -199,6 +201,7 @@ let relation =
     (K_parameter, Michelson_v1_primitives.K_parameter);
     (K_storage, Michelson_v1_primitives.K_storage);
     (K_code, Michelson_v1_primitives.K_code);
+    (K_event, Michelson_v1_primitives.K_event);
     (D_False, Michelson_v1_primitives.D_False);
     (D_Elt, Michelson_v1_primitives.D_Elt);
     (D_Left, Michelson_v1_primitives.D_Left);
@@ -316,6 +319,7 @@ let relation =
     (I_READ_TICKET, Michelson_v1_primitives.I_READ_TICKET);
     (I_SPLIT_TICKET, Michelson_v1_primitives.I_SPLIT_TICKET);
     (I_JOIN_TICKETS, Michelson_v1_primitives.I_JOIN_TICKETS);
+    (I_EMIT, Michelson_v1_primitives.I_EMIT);
     (T_bool, Michelson_v1_primitives.T_bool);
     (T_contract, Michelson_v1_primitives.T_contract);
     (T_int, Michelson_v1_primitives.T_int);
@@ -369,6 +373,7 @@ let string_of_prim prim =
   | K_parameter -> "K_parameter"
   | K_storage -> "K_storage"
   | K_code -> "K_code"
+  | K_event -> "K_event"
   | D_False -> "D_False"
   | D_Elt -> "D_Elt"
   | D_Left -> "D_Left"
@@ -486,6 +491,7 @@ let string_of_prim prim =
   | I_READ_TICKET -> "I_READ_TICKET"
   | I_SPLIT_TICKET -> "I_SPLIT_TICKET"
   | I_JOIN_TICKETS -> "I_JOIN_TICKETS"
+  | I_EMIT -> "I_EMIT"
   | T_bool -> "T_bool"
   | T_contract -> "T_contract"
   | T_int -> "T_int"
@@ -535,7 +541,7 @@ type kind = Data_kind | Instr_kind | Type_kind | Keyword_kind | Annot_kind
 
 let kind (x : prim) =
   match x with
-  | K_parameter | K_storage | K_code -> Keyword_kind
+  | K_parameter | K_storage | K_code | K_event -> Keyword_kind
   | D_Hole | D_False | D_Elt | D_Left | D_None | D_Pair | D_Right | D_Some
   | D_True | D_Unit ->
       Data_kind
@@ -556,7 +562,7 @@ let kind (x : prim) =
   | I_CAST | I_RENAME | I_DIG | I_DUG | I_LEVEL | I_SELF_ADDRESS | I_NEVER
   | I_SAPLING_EMPTY_STATE | I_SAPLING_VERIFY_UPDATE | I_VOTING_POWER
   | I_TOTAL_VOTING_POWER | I_KECCAK | I_SHA3 | I_PAIRING_CHECK | I_TICKET
-  | I_READ_TICKET | I_SPLIT_TICKET | I_JOIN_TICKETS | I_Hole ->
+  | I_READ_TICKET | I_SPLIT_TICKET | I_JOIN_TICKETS | I_Hole | I_EMIT ->
       Instr_kind
   | T_bool | T_contract | T_int | T_key | T_key_hash | T_lambda | T_list | T_map
   | T_big_map | T_nat | T_option | T_or | T_pair | T_set | T_signature

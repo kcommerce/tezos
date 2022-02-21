@@ -50,6 +50,7 @@ type callsite =
   | Toplevel : {
       storage_type : ('sto, _) ty;
       param_type : ('param, _) ty;
+      event_type : ('ev, _) ty;
       entrypoints : 'param Script_typed_ir.entrypoints;
     }
       -> callsite
@@ -63,6 +64,7 @@ val init : callsite -> t
 val toplevel :
   storage_type:('sto, _) ty ->
   param_type:('param, _) ty ->
+  event_type:('ev, _) ty ->
   entrypoints:'param Script_typed_ir.entrypoints ->
   t
 

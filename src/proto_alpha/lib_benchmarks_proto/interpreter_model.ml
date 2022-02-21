@@ -280,6 +280,32 @@ module Models = struct
     end in
     (module M : Model.Model_impl with type arg_type = int * (int * unit))
 
+  (** cost model for I_Emit *)
+  let emit_model name =
+    let module M = struct
+      type arg_type = int * (int * (int * (int * unit)))
+
+      module Def (X : Costlang.S) = struct
+        open X
+
+        type model_type = size -> size -> size -> size -> size
+
+        let arity = Model.arity_4
+
+        let model =
+          lam ~name:"size1" @@ fun size1 ->
+          lam ~name:"size2" @@ fun size2 ->
+          lam ~name:"size3" @@ fun size3 ->
+          lam ~name:"size4" @@ fun size4 ->
+          (free ~name:(fv (sf "%s_tag" name)) * size1)
+          + (free ~name:(fv (sf "%s_micheline_nodes" name)) * size2)
+          + (free ~name:(fv (sf "%s_micheline_int_bytes" name)) * size3)
+          + (free ~name:(fv (sf "%s_micheline_string_bytes" name)) * size4)
+      end
+    end in
+    (module M : Model.Model_impl
+      with type arg_type = int * (int * (int * (int * unit))))
+
   let verify_update_model name =
     Model.bilinear_affine
       ~intercept:(fv (sf "%s_const" name))
@@ -454,7 +480,8 @@ let ir_model ?specialization instr_or_cont =
       | N_IHalt -> model_0 instr_or_cont (const1_model name)
       | N_IApply -> model_0 instr_or_cont (const1_model name)
       | N_ILog -> model_0 instr_or_cont (const1_model name)
-      | N_IOpen_chest -> model_2 instr_or_cont (open_chest_model name))
+      | N_IOpen_chest -> model_2 instr_or_cont (open_chest_model name)
+      | N_IEmit -> model_4 instr_or_cont (emit_model name))
   | Cont_name cont -> (
       match cont with
       | N_KNil -> model_0 instr_or_cont (const1_model name)

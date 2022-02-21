@@ -1,0 +1,31 @@
+tests_alpha/test_contract.py::TestTypecheck::test_typecheck[opcodes/emit.tz]
+
+Well typed
+Gas remaining: 1039991.448 units remaining
+{ parameter unit ;
+  storage unit ;
+  event (or (nat %number) (string %words)) ;
+  code { PUSH nat 10
+         /* [ nat : pair unit unit ] */ ;
+         LEFT string
+         /* [ or nat string : pair unit unit ] */ ;
+         PUSH string "this is number"
+         /* [ string : or nat string : pair unit unit ] */ ;
+         EMIT
+         /* [ pair unit unit ] */ ;
+         PUSH string "lorem ipsum"
+         /* [ string : pair unit unit ] */ ;
+         RIGHT nat
+         /* [ or nat string : pair unit unit ] */ ;
+         PUSH string "Cicero"
+         /* [ string : or nat string : pair unit unit ] */ ;
+         EMIT
+         /* [ pair unit unit ] */ ;
+         DROP
+         /* [] */ ;
+         UNIT
+         /* [ unit ] */ ;
+         NIL operation
+         /* [ list operation : unit ] */ ;
+         PAIR
+         /* [ pair (list operation) unit ] */ } }

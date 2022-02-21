@@ -558,6 +558,7 @@ and kinstr_size :
     | IJoin_tickets (kinfo, cty, _) ->
         ret_succ_adding (accu ++ ty_size cty) (base kinfo +! word_size)
     | IOpen_chest (kinfo, _) -> ret_succ_adding accu (base kinfo)
+    | IEmit (kinfo, _, _) -> ret_succ_adding accu (base kinfo)
     | IHalt kinfo -> ret_succ_adding accu (h1w +! kinfo_size kinfo)
     | ILog (_, _, _, _) ->
         (* This instruction is ignored because it is only used for testing. *)

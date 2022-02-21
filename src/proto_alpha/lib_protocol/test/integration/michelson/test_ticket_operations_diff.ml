@@ -232,6 +232,7 @@ let origination_operation block ~src ~baker ~script ~storage ~forges_tickets =
                storage;
                code = _;
                arg_type = _;
+               event_type = _;
                views = _;
                entrypoints = _;
                code_size = _;

@@ -31,6 +31,7 @@ type callsite =
   | Toplevel : {
       storage_type : ('sto, _) ty;
       param_type : ('param, _) ty;
+      event_type : ('ev, _) ty;
       entrypoints : 'param Script_typed_ir.entrypoints;
     }
       -> callsite
@@ -41,8 +42,8 @@ type t = {callsite : callsite; in_lambda : in_lambda}
 
 let init callsite = {callsite; in_lambda = false}
 
-let toplevel ~storage_type ~param_type ~entrypoints =
-  init (Toplevel {storage_type; param_type; entrypoints})
+let toplevel ~storage_type ~param_type ~event_type ~entrypoints =
+  init (Toplevel {storage_type; param_type; event_type; entrypoints})
 
 let view = init View
 

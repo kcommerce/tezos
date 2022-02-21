@@ -1,0 +1,17 @@
+parameter unit;
+storage unit;
+event (or (nat %number) (string %words));
+code {
+        PUSH nat 10;
+        LEFT string;
+        PUSH string "this is number";
+        EMIT;
+        PUSH string "lorem ipsum";
+        RIGHT nat;
+        PUSH string "Cicero";
+        EMIT;
+
+        DROP;
+        UNIT;
+        NIL operation;
+        PAIR };

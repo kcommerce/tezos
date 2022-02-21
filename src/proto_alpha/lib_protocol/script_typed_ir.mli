@@ -317,6 +317,7 @@ type ('arg, 'storage) script =
       arg_type : ('arg, _) ty;
       storage : 'storage;
       storage_type : ('storage, _) ty;
+      event_type : opt_event_ty;
       views : view_map;
       entrypoints : 'arg entrypoints;
       code_size : Cache_memory_helpers.sint;
@@ -1119,6 +1120,17 @@ and ('before_top, 'before, 'result_top, 'result) kinstr =
            'f )
          kinstr
   (*
+    Event
+    =====
+
+    This instruction emits a user-defined event value without affecting blockchain states
+  *)
+  | IEmit :
+      (Script_string.t, 'a * ('b * 's)) kinfo
+      * ('a, _) ty
+      * ('b, 's, 'r, 'f) kinstr
+      -> (Script_string.t, 'a * ('b * 's), 'r, 'f) kinstr
+  (*
 
      Internal control instructions
      =============================
@@ -1379,6 +1391,10 @@ and ('ty, 'comparable) ty =
   | Chest_t : (Script_timelock.chest, no) ty
 
 and 'ty comparable_ty = ('ty, yes) ty
+
+and opt_event_ty =
+  | No_event_ty : opt_event_ty
+  | Some_event_ty : ('e, _) ty -> opt_event_ty
 
 and ('top_ty, 'resty) stack_ty =
   | Item_t :
