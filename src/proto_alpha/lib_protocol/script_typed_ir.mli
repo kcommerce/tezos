@@ -1143,7 +1143,11 @@ and ('before_top, 'before, 'result_top, 'result) kinstr =
   *)
   | IHalt : ('a, 's) kinfo -> ('a, 's, 'a, 's) kinstr
   | ILog :
-      ('a, 's) kinfo * logging_event * logger * ('a, 's, 'r, 'f) kinstr
+      ('a, 's) kinfo
+      * ('a, 's) stack_ty
+      * logging_event
+      * logger
+      * ('a, 's, 'r, 'f) kinstr
       -> ('a, 's, 'r, 'f) kinstr
 
 and logging_event =
@@ -1288,7 +1292,7 @@ and (_, _, _, _) continuation =
       -> ('a, 's, 'r, 'f) continuation
   (* This continuation instruments the execution with a [logger]. *)
   | KLog :
-      ('a, 's, 'r, 'f) continuation * logger
+      ('a, 's, 'r, 'f) continuation * ('a, 's) stack_ty * logger
       -> ('a, 's, 'r, 'f) continuation
 
 (*
@@ -1420,7 +1424,7 @@ and ('a, 's, 'r, 'f) kdescr = {
   kinstr : ('a, 's, 'r, 'f) kinstr;
 }
 
-and ('a, 's) kinfo = {iloc : Script.location; kstack_ty : ('a, 's) stack_ty}
+and ('a, 's) kinfo = {iloc : Script.location}
 
 (*
 
@@ -1571,11 +1575,21 @@ val manager_kind : 'kind manager_operation -> 'kind Kind.manager
 val kinfo_of_kinstr : ('a, 's, 'b, 'f) kinstr -> ('a, 's) kinfo
 
 type kinstr_rewritek = {
-  apply : 'b 'u 'r 'f. ('b, 'u, 'r, 'f) kinstr -> ('b, 'u, 'r, 'f) kinstr;
+  apply :
+    'b 'u 'r 'f.
+    ('b, 'u) stack_ty -> ('b, 'u, 'r, 'f) kinstr -> ('b, 'u, 'r, 'f) kinstr;
 }
 
 val kinstr_rewritek :
-  ('a, 's, 'r, 'f) kinstr -> kinstr_rewritek -> ('a, 's, 'r, 'f) kinstr
+  ('a, 's) stack_ty ->
+  ('a, 's, 'r, 'f) kinstr ->
+  kinstr_rewritek ->
+  ('a, 's, 'r, 'f) kinstr tzresult
+
+val kinstr_final_stack_type :
+  ('a, 's) stack_ty ->
+  ('a, 's, 'r, 'f) kinstr ->
+  ('r, 'f) stack_ty option tzresult
 
 val ty_size : ('a, _) ty -> 'a Type_size.t
 

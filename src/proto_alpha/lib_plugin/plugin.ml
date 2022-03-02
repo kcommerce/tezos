@@ -2324,7 +2324,7 @@ module RPC = struct
         | IJoin_tickets _ -> pp_print_string fmt "JOIN_TICKETS"
         | IOpen_chest _ -> pp_print_string fmt "OPEN_CHEST"
         | IHalt _ -> pp_print_string fmt "[halt]"
-        | ILog (_, _, _, instr) ->
+        | ILog (_, _, _, _, instr) ->
             Format.fprintf fmt "log/%a" pp_instr_name instr
 
     let run_operation_service ctxt ()
