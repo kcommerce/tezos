@@ -9,28 +9,28 @@ big_map diff
   Set map(4)["hello"] to 4
   Set map(4)["hi"] to 5
 trace
-  - location: 13 (remaining gas: 1039989.836 units remaining)
+  - location: 13 (remaining gas: 1039989.791 units remaining)
     [ (Pair "hi" (Some 5) { Elt "hello" 4 }) ]
-  - location: 13 (remaining gas: 1039989.826 units remaining)
+  - location: 13 (remaining gas: 1039989.781 units remaining)
     [ "hi"
       (Pair (Some 5) { Elt "hello" 4 }) ]
-  - location: 14 (remaining gas: 1039989.816 units remaining)
+  - location: 14 (remaining gas: 1039989.771 units remaining)
     [ (Pair (Some 5) { Elt "hello" 4 }) ]
-  - location: 16 (remaining gas: 1039989.806 units remaining)
+  - location: 16 (remaining gas: 1039989.761 units remaining)
     [ (Some 5)
       { Elt "hello" 4 } ]
-  - location: 14 (remaining gas: 1039989.786 units remaining)
+  - location: 14 (remaining gas: 1039989.731 units remaining)
     [ "hi"
       (Some 5)
       { Elt "hello" 4 } ]
-  - location: 17 (remaining gas: 1039988.871 units remaining)
+  - location: 17 (remaining gas: 1039988.816 units remaining)
     [ None
       { Elt "hello" 4 ; Elt "hi" 5 } ]
-  - location: 18 (remaining gas: 1039988.861 units remaining)
+  - location: 18 (remaining gas: 1039988.806 units remaining)
     [ (Pair None { Elt "hello" 4 ; Elt "hi" 5 }) ]
-  - location: 19 (remaining gas: 1039988.851 units remaining)
+  - location: 19 (remaining gas: 1039988.796 units remaining)
     [ {}
       (Pair None { Elt "hello" 4 ; Elt "hi" 5 }) ]
-  - location: 21 (remaining gas: 1039988.841 units remaining)
+  - location: 21 (remaining gas: 1039988.786 units remaining)
     [ (Pair {} None { Elt "hello" 4 ; Elt "hi" 5 }) ]
 

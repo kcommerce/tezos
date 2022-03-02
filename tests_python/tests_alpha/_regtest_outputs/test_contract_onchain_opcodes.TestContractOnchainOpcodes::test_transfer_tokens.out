@@ -1,7 +1,7 @@
 tests_alpha/test_contract_onchain_opcodes.py::TestContractOnchainOpcodes::test_transfer_tokens
 
 Node is bootstrapped.
-Estimated gas: 1407.940 units (will add 100 for safety)
+Estimated gas: 1407.985 units (will add 100 for safety)
 Estimated storage: 295 bytes added (will add 20 for safety)
 Operation successfully injected in the node.
 Operation hash is '[BLOCK_HASH]'
@@ -31,7 +31,7 @@ This sequence of operations was run:
           [CONTRACT_HASH]
         Storage size: 38 bytes
         Paid storage size diff: 38 bytes
-        Consumed gas: 1407.940
+        Consumed gas: 1407.985
         Balance updates:
           [CONTRACT_HASH] ... -ꜩ0.0095
           storage fees ........................... +ꜩ0.0095
@@ -44,7 +44,7 @@ New contract [CONTRACT_HASH] originated.
 Contract memorized as test_transfer_account1.
 Injected block at minimal timestamp
 Node is bootstrapped.
-Estimated gas: 1407.940 units (will add 100 for safety)
+Estimated gas: 1407.985 units (will add 100 for safety)
 Estimated storage: 295 bytes added (will add 20 for safety)
 Operation successfully injected in the node.
 Operation hash is '[BLOCK_HASH]'
@@ -74,7 +74,7 @@ This sequence of operations was run:
           [CONTRACT_HASH]
         Storage size: 38 bytes
         Paid storage size diff: 38 bytes
-        Consumed gas: 1407.940
+        Consumed gas: 1407.985
         Balance updates:
           [CONTRACT_HASH] ... -ꜩ0.0095
           storage fees ........................... +ꜩ0.0095
@@ -87,7 +87,7 @@ New contract [CONTRACT_HASH] originated.
 Contract memorized as test_transfer_account2.
 Injected block at minimal timestamp
 Node is bootstrapped.
-Estimated gas: 1417.097 units (will add 100 for safety)
+Estimated gas: 1417.277 units (will add 100 for safety)
 Estimated storage: 323 bytes added (will add 20 for safety)
 Operation successfully injected in the node.
 Operation hash is '[BLOCK_HASH]'
@@ -127,7 +127,7 @@ This sequence of operations was run:
           [CONTRACT_HASH]
         Storage size: 66 bytes
         Paid storage size diff: 66 bytes
-        Consumed gas: 1417.097
+        Consumed gas: 1417.277
         Balance updates:
           [CONTRACT_HASH] ... -ꜩ0.0165
           storage fees ........................... +ꜩ0.0165
@@ -143,7 +143,7 @@ Injected block at minimal timestamp
 [CONTRACT_HASH]
 
 Node is bootstrapped.
-Estimated gas: 4683.067 units (will add 100 for safety)
+Estimated gas: 4683.292 units (will add 100 for safety)
 Estimated storage: no bytes added
 Operation successfully injected in the node.
 Operation hash is '[BLOCK_HASH]'
@@ -169,7 +169,7 @@ This sequence of operations was run:
       This transaction was successfully applied
       Updated storage: Unit
       Storage size: 66 bytes
-      Consumed gas: 3480.265
+      Consumed gas: 3480.490
       Balance updates:
         [CONTRACT_HASH] ... -ꜩ100
         [CONTRACT_HASH] ... +ꜩ100
@@ -191,7 +191,7 @@ Injected block at minimal timestamp
 [CONTRACT_HASH]
 
 Node is bootstrapped.
-Estimated gas: 3771 units (will add 100 for safety)
+Estimated gas: 3771.045 units (will add 100 for safety)
 Estimated storage: no bytes added
 Operation successfully injected in the node.
 Operation hash is '[BLOCK_HASH]'
@@ -204,7 +204,7 @@ This sequence of operations was run:
     From: [CONTRACT_HASH]
     Fee to the baker: ꜩ0.000685
     Expected counter: [EXPECTED_COUNTER]
-    Gas limit: 3871
+    Gas limit: 3872
     Storage limit: 0 bytes
     Balance updates:
       [CONTRACT_HASH] ... -ꜩ0.000685
@@ -217,7 +217,7 @@ This sequence of operations was run:
       This transaction was successfully applied
       Updated storage: Unit
       Storage size: 66 bytes
-      Consumed gas: 2568.198
+      Consumed gas: 2568.243
       Balance updates:
         [CONTRACT_HASH] ... -ꜩ100
         [CONTRACT_HASH] ... +ꜩ100

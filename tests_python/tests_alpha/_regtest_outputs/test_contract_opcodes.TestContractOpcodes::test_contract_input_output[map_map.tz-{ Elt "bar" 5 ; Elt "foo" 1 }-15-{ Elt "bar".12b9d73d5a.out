@@ -7,62 +7,62 @@ emitted operations
 big_map diff
   
 trace
-  - location: 9 (remaining gas: 1039989.453 units remaining)
+  - location: 9 (remaining gas: 1039989.363 units remaining)
     [ (Pair 15 { Elt "bar" 5 ; Elt "foo" 1 }) ]
-  - location: 9 (remaining gas: 1039989.443 units remaining)
+  - location: 9 (remaining gas: 1039989.353 units remaining)
     [ 15
       { Elt "bar" 5 ; Elt "foo" 1 } ]
-  - location: 10 (remaining gas: 1039989.433 units remaining)
+  - location: 10 (remaining gas: 1039989.343 units remaining)
     [ { Elt "bar" 5 ; Elt "foo" 1 }
       15 ]
-  - location: 11 (remaining gas: 1039989.433 units remaining)
+  - location: 11 (remaining gas: 1039989.198 units remaining)
     [ (Pair "bar" 5)
       15 ]
-  - location: 13 (remaining gas: 1039989.423 units remaining)
+  - location: 13 (remaining gas: 1039989.188 units remaining)
     [ 5
       15 ]
-  - location: 14 (remaining gas: 1039989.413 units remaining)
+  - location: 14 (remaining gas: 1039989.178 units remaining)
     [ 15 ]
-  - location: 16 (remaining gas: 1039989.403 units remaining)
+  - location: 16 (remaining gas: 1039989.168 units remaining)
     [ 15
       15 ]
-  - location: 14 (remaining gas: 1039989.383 units remaining)
+  - location: 14 (remaining gas: 1039989.138 units remaining)
     [ 5
       15
       15 ]
-  - location: 17 (remaining gas: 1039989.348 units remaining)
+  - location: 17 (remaining gas: 1039989.103 units remaining)
     [ 20
       15 ]
-  - location: 11 (remaining gas: 1039989.338 units remaining)
+  - location: 11 (remaining gas: 1039988.927 units remaining)
     [ (Pair "foo" 1)
       15 ]
-  - location: 13 (remaining gas: 1039989.328 units remaining)
+  - location: 13 (remaining gas: 1039988.917 units remaining)
     [ 1
       15 ]
-  - location: 14 (remaining gas: 1039989.318 units remaining)
+  - location: 14 (remaining gas: 1039988.907 units remaining)
     [ 15 ]
-  - location: 16 (remaining gas: 1039989.308 units remaining)
+  - location: 16 (remaining gas: 1039988.897 units remaining)
     [ 15
       15 ]
-  - location: 14 (remaining gas: 1039989.288 units remaining)
+  - location: 14 (remaining gas: 1039988.867 units remaining)
     [ 1
       15
       15 ]
-  - location: 17 (remaining gas: 1039989.253 units remaining)
+  - location: 17 (remaining gas: 1039988.832 units remaining)
     [ 16
       15 ]
-  - location: 11 (remaining gas: 1039989.243 units remaining)
+  - location: 11 (remaining gas: 1039988.640 units remaining)
     [ { Elt "bar" 20 ; Elt "foo" 16 }
       15 ]
-  - location: 18 (remaining gas: 1039989.233 units remaining)
+  - location: 18 (remaining gas: 1039988.630 units remaining)
     [ 15 ]
-  - location: 20 (remaining gas: 1039989.223 units remaining)
+  - location: 20 (remaining gas: 1039988.620 units remaining)
     [  ]
-  - location: 18 (remaining gas: 1039989.203 units remaining)
+  - location: 18 (remaining gas: 1039988.590 units remaining)
     [ { Elt "bar" 20 ; Elt "foo" 16 } ]
-  - location: 21 (remaining gas: 1039989.193 units remaining)
+  - location: 21 (remaining gas: 1039988.580 units remaining)
     [ {}
       { Elt "bar" 20 ; Elt "foo" 16 } ]
-  - location: 23 (remaining gas: 1039989.183 units remaining)
+  - location: 23 (remaining gas: 1039988.570 units remaining)
     [ (Pair {} { Elt "bar" 20 ; Elt "foo" 16 }) ]
 
