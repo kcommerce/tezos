@@ -3453,7 +3453,7 @@ and[@coq_axiom_with_reason "gadt"] parse_instr :
               let hinfo = {iloc = loc} in
               let binfo = kinfo_of_descr ibody in
               let ibody = ibody.instr.apply binfo (IHalt hinfo) in
-              IMap_iter (kinfo, key, ty, ibody, k));
+              IMap_iter (kinfo, ty, ibody, k));
         }
       in
       Lwt.return

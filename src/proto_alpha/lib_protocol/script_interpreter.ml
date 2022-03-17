@@ -616,7 +616,7 @@ and step : type a s b t r f. (a, s, b, t, r, f) step_type =
           (step [@ocaml.tailcall]) g gas k ks res stack
       | IMap_map (_, _, body, k) ->
           (imap_map [@ocaml.tailcall]) g gas (body, k) ks accu stack
-      | IMap_iter (_, _kty, kvty, body, k) ->
+      | IMap_iter (_, kvty, body, k) ->
           (imap_iter [@ocaml.tailcall]) g gas (body, kvty, k) ks accu stack
       | IMap_mem (_, k) ->
           let map, stack = stack in

@@ -572,7 +572,6 @@ and ('before_top, 'before, 'result_top, 'result) kinstr =
       -> (('a, 'b) map, 'd * 's, 'r, 'f) kinstr
   | IMap_iter :
       (('a, 'b) map, 'c * 's) kinfo
-      * ('a, _) ty
       * ('a * 'b, _) ty
       * ('a * 'b, 'c * 's, 'c, 's) kinstr
       * ('c, 's, 'r, 'f) kinstr

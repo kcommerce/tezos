@@ -389,7 +389,7 @@ and kinstr_size :
           (base kinfo +! word_size)
     | IMap_map (kinfo, ty, _, _) ->
         ret_succ_adding (accu ++ ty_size ty) (base kinfo +! word_size)
-    | IMap_iter (kinfo, kty, pty, _, _) ->
+    | IMap_iter (kinfo, Pair_t (kty, pty, _, _), _, _) ->
         ret_succ_adding
           (accu ++ ty_size kty ++ ty_size pty)
           (base kinfo +! word_size)
