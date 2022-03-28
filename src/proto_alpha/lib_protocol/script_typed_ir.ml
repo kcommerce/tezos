@@ -448,24 +448,6 @@ type 'arg entrypoints = {
   original_type_expr : Script.node;
 }
 
-type ('arg, 'storage) script =
-  | Script : {
-      code :
-        (('arg, 'storage) pair, (operation boxed_list, 'storage) pair) lambda;
-      arg_type : ('arg, _) ty;
-      storage : 'storage;
-      storage_type : ('storage, _) ty;
-      views : view_map;
-      entrypoints : 'arg entrypoints;
-      code_size : Cache_memory_helpers.sint;
-          (* This is an over-approximation of the value size in memory, in
-             bytes, of the contract's static part, that is its source
-             code. This includes the code of the contract as well as the code
-             of the views. The storage size is not taken into account by this
-             field as it has a dynamic size. *)
-    }
-      -> ('arg, 'storage) script
-
 type ('a, 's) kinfo = {iloc : Script.location} [@@ocaml.unboxed]
 
 (* ---- Instructions --------------------------------------------------------*)
@@ -1431,6 +1413,24 @@ and operation = {
   piop : packed_internal_operation;
   lazy_storage_diff : Lazy_storage.diffs option;
 }
+
+type ('arg, 'storage) script =
+  | Script : {
+      code :
+        (('arg, 'storage) pair, (operation boxed_list, 'storage) pair) lambda;
+      arg_type : ('arg, _) ty;
+      storage : 'storage;
+      storage_type : ('storage, _) ty;
+      views : view_map;
+      entrypoints : 'arg entrypoints;
+      code_size : Cache_memory_helpers.sint;
+          (* This is an over-approximation of the value size in memory, in
+             bytes, of the contract's static part, that is its source
+             code. This includes the code of the contract as well as the code
+             of the views. The storage size is not taken into account by this
+             field as it has a dynamic size. *)
+    }
+      -> ('arg, 'storage) script
 
 type packed_manager_operation =
   | Manager : 'kind manager_operation -> packed_manager_operation
