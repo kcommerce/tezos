@@ -416,6 +416,7 @@ let add_section ~(measure : Measure.packed_measurement) ~(model_name : string)
             ~problem
             ~solution
             ~plot_target
+            ~options:Display.default_options
         then Some filename
         else None
     | Some folder -> (
@@ -441,6 +442,7 @@ let add_section ~(measure : Measure.packed_measurement) ~(model_name : string)
                 ~problem
                 ~solution
                 ~plot_target
+                ~options:Display.default_options
             then Some (name ^ ".pdf")
             else None
         | {st_size; _} when st_size > 0 ->
@@ -455,6 +457,7 @@ let add_section ~(measure : Measure.packed_measurement) ~(model_name : string)
                 ~problem
                 ~solution
                 ~plot_target
+                ~options:Display.default_options
             then Some (name ^ ".pdf")
             else None)
   in
