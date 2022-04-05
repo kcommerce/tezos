@@ -302,8 +302,6 @@ let flextesa = vendored_lib "flextesa"
 
 let ledgerwallet_tezos = vendored_lib "ledgerwallet-tezos"
 
-let pyml_plot = vendored_lib "pyml-plot"
-
 (* INTERNAL LIBS *)
 
 let tezos_test_helpers =
@@ -2408,7 +2406,7 @@ let tezos_benchmark =
         prbnmcn_dagger_stats;
         prbnmcn_stats;
         pringo;
-        pyml_plot;
+        pyml;
         ocaml_migrate_parsetree;
         opam_only "hashcons" V.True;
       ]
@@ -4156,7 +4154,6 @@ let _tezos_snoop =
         str;
         ocamlgraph;
         pyml;
-        pyml_plot;
         prbnmcn_stats;
       ]
     ~linkall:true
