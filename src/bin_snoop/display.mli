@@ -25,14 +25,16 @@
 
 (** [plot_target] specifies where to display the plot. *)
 type plot_target =
-  | Save of {file : string option}
-      (** Save to [file] in .pdf format if not [None],
-          otherwise saves to "{bench-name}_{model-name}_{kind}.pdf" *)
+  | Save
+      (** Save to file in .pdf format. Filename is automatically generated
+          following the scheme: "{bench-name}_{model-name}_{kind}.pdf" *)
   | Show  (** Display to screen (requires Qt) *)
-  | ShowAndSave of {file : string option}  (** Combines previous options *)
+  | ShowAndSave  (** Combines previous options *)
 
 (** [options] specifies some display parameters. *)
 type options = {
+  save_directory : string;
+      (** Specify where to save figures. Defaults to [Filename.temp_dir_name]. *)
   point_size : float;
       (** Specifies the size of points for scatter plots.
           Defaults to [0.5] *)
@@ -52,7 +54,7 @@ val options_encoding : options Data_encoding.t
 (** Default options. See {!options} documentation. *)
 val default_options : options
 
-(** Performs the plot. *)
+(** Performs the plot. Returns the list of files produced. *)
 val perform_plot :
   measure:Measure.packed_measurement ->
   model_name:string ->
@@ -60,4 +62,4 @@ val perform_plot :
   solution:Inference.solution ->
   plot_target:plot_target ->
   options:options ->
-  bool
+  string list
