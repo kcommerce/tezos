@@ -50,20 +50,42 @@ type options = {
   point_size : float;
   qt_target_pixel_size : (int * int) option;
   pdf_target_cm_size : (float * float) option;
+  plot_raw_workload : bool;
 }
 
 let options_encoding =
   let open Data_encoding in
   conv
-    (fun {save_directory; point_size; qt_target_pixel_size; pdf_target_cm_size} ->
-      (save_directory, point_size, qt_target_pixel_size, pdf_target_cm_size))
-    (fun (save_directory, point_size, qt_target_pixel_size, pdf_target_cm_size) ->
-      {save_directory; point_size; qt_target_pixel_size; pdf_target_cm_size})
-    (obj4
+    (fun {
+           save_directory;
+           point_size;
+           qt_target_pixel_size;
+           pdf_target_cm_size;
+           plot_raw_workload;
+         } ->
+      ( save_directory,
+        point_size,
+        qt_target_pixel_size,
+        pdf_target_cm_size,
+        plot_raw_workload ))
+    (fun ( save_directory,
+           point_size,
+           qt_target_pixel_size,
+           pdf_target_cm_size,
+           plot_raw_workload ) ->
+      {
+        save_directory;
+        point_size;
+        qt_target_pixel_size;
+        pdf_target_cm_size;
+        plot_raw_workload;
+      })
+    (obj5
        (req "save_directory" string)
        (req "point_size" float)
        (opt "qt_target_pixel_size" (tup2 int31 int31))
-       (opt "pdf_target_cm_size" (tup2 float float)))
+       (opt "pdf_target_cm_size" (tup2 float float))
+       (dft "plot_raw_workload" bool false))
 
 let default_options =
   {
@@ -71,6 +93,7 @@ let default_options =
     point_size = 0.5;
     qt_target_pixel_size = None;
     pdf_target_cm_size = None;
+    plot_raw_workload = false;
   }
 
 let opts = ref default_options
@@ -327,6 +350,28 @@ let validator_empirical workload_data (problem : Inference.problem)
 
 type plot_target = Save | Show | ShowAndSave
 
+let raw_workload (workload_data : (Sparse_vec.String.t * float array) list) =
+  let open Plot in
+  List.map
+    (fun (workload, data) ->
+      let workload = Sparse_vec.String.to_list workload in
+      let title =
+        Format.asprintf
+          "%a"
+          (Format.pp_print_list
+             ~pp_sep:(fun fmtr () -> Format.fprintf fmtr "-")
+             (fun fmtr (k, v) -> Format.fprintf fmtr "%s=%d" k (int_of_float v)))
+          workload
+        |> underscore_to_dash
+      in
+      let points = data |> Array.to_seq |> Seq.map r1 |> Data.of_seq in
+      plot2
+        ~xaxis:"time"
+        ~yaxis:"freq"
+        ~title
+        [Histogram.hist ~binwidth:50.0 ~points ()])
+    workload_data
+
 let perform_plot ~measure ~model_name ~problem ~solution ~plot_target ~options =
   opts := options ;
   let (Measure.Measurement ((module Bench), measurement)) = measure in
@@ -344,7 +389,7 @@ let perform_plot ~measure ~model_name ~problem ~solution ~plot_target ~options =
         (Bench.workload_to_vector workload, Maths.vector_to_array measures))
       measurement.workload_data
   in
-  let try_plot kind plot_result =
+  let try_plot plot_target kind plot_result =
     match plot_result with
     | Ok plots -> (
         match plot_target with
@@ -368,7 +413,18 @@ let perform_plot ~measure ~model_name ~problem ~solution ~plot_target ~options =
         Format.eprintf "Failed performing plot: %s@." msg ;
         []
   in
-  (try_plot "emp" @@ empirical workload_data)
-  @ (try_plot "validation" @@ validator problem solution)
-  @ try_plot "emp-validation"
-  @@ validator_empirical workload_data problem solution
+  let raw =
+    if options.plot_raw_workload then
+      List.mapi
+        (fun i plot ->
+          let kind = Format.asprintf "raw-%.2d" i in
+          try_plot Save kind (Result.ok [plot]))
+        (raw_workload workload_data)
+      |> List.flatten
+    else []
+  in
+  (try_plot plot_target "emp" @@ empirical workload_data)
+  @ (try_plot plot_target "validation" @@ validator problem solution)
+  @ (try_plot plot_target "emp-validation"
+    @@ validator_empirical workload_data problem solution)
+  @ raw
