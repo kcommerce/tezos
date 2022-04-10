@@ -180,6 +180,7 @@ val rpc :
   ?hooks:Process.hooks ->
   ?env:string String_map.t ->
   ?data:JSON.u ->
+  ?filename:string ->
   ?query_string:query_string ->
   meth ->
   path ->
@@ -196,6 +197,7 @@ val spawn_rpc :
   ?hooks:Process.hooks ->
   ?env:string String_map.t ->
   ?data:JSON.u ->
+  ?filename:string ->
   ?query_string:query_string ->
   meth ->
   path ->
@@ -214,6 +216,7 @@ module Spawn : sig
     ?hooks:Process.hooks ->
     ?env:string String_map.t ->
     ?data:JSON.u ->
+    ?filename:string ->
     ?query_string:query_string ->
     meth ->
     path ->
