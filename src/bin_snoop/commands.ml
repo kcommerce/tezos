@@ -360,6 +360,12 @@ module Infer_cmd = struct
             };
         }
 
+  let set_empirical_plot empirical_plot options =
+    {
+      options with
+      display_options = {options.display_options with empirical_plot};
+    }
+
   let infer_handler
       ( print_problem,
         csv,
@@ -371,7 +377,8 @@ module Infer_cmd = struct
         override_files,
         save_solution,
         dot_file,
-        plot_raw_workload ) model_name workload_data solver () =
+        plot_raw_workload,
+        empirical_plot ) model_name workload_data solver () =
     let options =
       default_infer_parameters_options
       |> set_print_problem print_problem
@@ -384,6 +391,7 @@ module Infer_cmd = struct
       |> set_save_solution save_solution
       |> set_dot_file dot_file
       |> set_plot_raw_workload plot_raw_workload
+      |> lift_opt set_empirical_plot empirical_plot
     in
     commandline_outcome_ref :=
       Some (Infer {model_name; workload_data; solver; infer_opts = options}) ;
@@ -490,7 +498,7 @@ module Infer_cmd = struct
         ~placeholder:"filename"
         override_file_param
 
-    let plot_raw_workload =
+    let plot_raw_workload_arg =
       let raw_workload_directory_param =
         Clic.parameter (fun (_ : unit) parsed -> Lwt.return_ok parsed)
       in
@@ -499,11 +507,33 @@ module Infer_cmd = struct
         ~long:"plot-raw-workload"
         ~placeholder:"directory"
         raw_workload_directory_param
+
+    let empirical_plot_arg =
+      let empirical_plot_param =
+        Clic.parameter (fun (_ : unit) parsed ->
+            match parsed with
+            | "full" -> Lwt.return_ok Display.Empirical_plot_full
+            | _ -> (
+                let splitted = String.split ',' parsed in
+                match List.map float_of_string splitted with
+                | exception Failure _ ->
+                    Error_monad.failwith "can't parse quantile"
+                | floats ->
+                    if List.exists (fun q -> q < 0.0 || q > 1.0) floats then
+                      Error_monad.failwith "quantile not in [0;1] interval"
+                    else Lwt.return_ok (Display.Empirical_plot_quantiles floats)
+                ))
+      in
+      Clic.arg
+        ~doc:"Options for plotting empirical data quantiles"
+        ~long:"empirical-plot"
+        ~placeholder:"full|q1,...,qn"
+        empirical_plot_param
   end
 
   let options =
     let open Options in
-    Clic.args11
+    Clic.args12
       print_problem
       dump_csv_arg
       plot_arg
@@ -514,7 +544,8 @@ module Infer_cmd = struct
       override_arg
       save_solution_arg
       dot_file_arg
-      plot_raw_workload
+      plot_raw_workload_arg
+      empirical_plot_arg
 
   let model_param =
     Clic.param
