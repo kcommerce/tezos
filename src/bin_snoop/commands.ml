@@ -312,6 +312,7 @@ module Infer_cmd = struct
       report = NoReport;
       save_solution = None;
       dot_file = None;
+      display_options = Display.default_options;
     }
 
   let set_print_problem print_problem options = {options with print_problem}
@@ -340,10 +341,24 @@ module Infer_cmd = struct
 
   let set_dot_file dot_file options = {options with dot_file}
 
-  let list_solvers () =
-    Printf.eprintf "ridge --ridge-alpha=<float>\n" ;
-    Printf.eprintf "lasso --lasso-alpha=<float> --lasso-positive\n" ;
-    Printf.eprintf "nnls\n%!"
+  let set_plot_raw_workload plot_raw_workload options =
+    match plot_raw_workload with
+    | None ->
+        {
+          options with
+          display_options =
+            {options.display_options with plot_raw_workload = false};
+        }
+    | Some save_directory ->
+        {
+          options with
+          display_options =
+            {
+              options.display_options with
+              plot_raw_workload = true;
+              save_directory;
+            };
+        }
 
   let infer_handler
       ( print_problem,
@@ -355,7 +370,8 @@ module Infer_cmd = struct
         report,
         override_files,
         save_solution,
-        dot_file ) model_name workload_data solver () =
+        dot_file,
+        plot_raw_workload ) model_name workload_data solver () =
     let options =
       default_infer_parameters_options
       |> set_print_problem print_problem
@@ -367,6 +383,7 @@ module Infer_cmd = struct
       |> set_override_files override_files
       |> set_save_solution save_solution
       |> set_dot_file dot_file
+      |> set_plot_raw_workload plot_raw_workload
     in
     commandline_outcome_ref :=
       Some (Infer {model_name; workload_data; solver; infer_opts = options}) ;
@@ -472,11 +489,21 @@ module Infer_cmd = struct
         ~long:"dot-file"
         ~placeholder:"filename"
         override_file_param
+
+    let plot_raw_workload =
+      let raw_workload_directory_param =
+        Clic.parameter (fun (_ : unit) parsed -> Lwt.return_ok parsed)
+      in
+      Clic.arg
+        ~doc:"Plot raw data for each workload in specified directory"
+        ~long:"plot-raw-workload"
+        ~placeholder:"directory"
+        raw_workload_directory_param
   end
 
   let options =
     let open Options in
-    Clic.args10
+    Clic.args11
       print_problem
       dump_csv_arg
       plot_arg
@@ -487,6 +514,7 @@ module Infer_cmd = struct
       override_arg
       save_solution_arg
       dot_file_arg
+      plot_raw_workload
 
   let model_param =
     Clic.param

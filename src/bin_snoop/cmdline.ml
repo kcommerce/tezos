@@ -72,7 +72,9 @@ type infer_parameters_options = {
   (* LaTeX report parameters *)
   save_solution : string option;
   (* Serialise solution to given file *)
-  dot_file : string option; (* Export dependency graph to graphviz format *)
+  dot_file : string option;
+  (* Export dependency graph to graphviz format *)
+  display_options : Display.options; (* Display options *)
 }
 
 (* Outcome of command-line parsing. *)

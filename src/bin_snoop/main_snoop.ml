@@ -313,7 +313,7 @@ and perform_plot measure model_name problem solution
          ~problem
          ~solution
          ~plot_target:Display.Show
-         ~options:Display.default_options
+         ~options:infer_opts.display_options
   else ()
 
 and get_all_workload_data_files directory =
