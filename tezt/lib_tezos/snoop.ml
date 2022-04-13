@@ -25,8 +25,6 @@
 
 type t = {path : string; name : string; color : Log.Color.t}
 
-type determinizer = Percentile of int | Mean
-
 type regression_method =
   | Lasso of {positive : bool}
   | Ridge of {positive : bool}
@@ -58,12 +56,8 @@ let spawn_command snoop command =
 
 (* Benchmark command *)
 
-let string_of_determinizer = function
-  | Mean -> "mean"
-  | Percentile i -> Printf.sprintf "percentile@%d" i
-
-let benchmark_command ~bench_name ~bench_num ~save_to ~nsamples ~determinizer
-    ?seed ?config_dir ?csv_dump () =
+let benchmark_command ~bench_name ~bench_num ~save_to ~nsamples ?seed
+    ?config_dir ?csv_dump () =
   let command =
     [
       "benchmark";
@@ -72,8 +66,6 @@ let benchmark_command ~bench_name ~bench_num ~save_to ~nsamples ~determinizer
       "save";
       "to";
       save_to;
-      "--determinizer";
-      string_of_determinizer determinizer;
       "--bench-num";
       string_of_int bench_num;
       "--nsamples";
@@ -93,8 +85,8 @@ let benchmark_command ~bench_name ~bench_num ~save_to ~nsamples ~determinizer
   in
   command @ seed @ config_dir @ csv_dump
 
-let spawn_benchmark ~bench_name ~bench_num ~nsamples ~determinizer ~save_to
-    ?seed ?config_dir ?csv_dump snoop =
+let spawn_benchmark ~bench_name ~bench_num ~nsamples ~save_to ?seed ?config_dir
+    ?csv_dump snoop =
   spawn_command
     snoop
     (benchmark_command
@@ -102,19 +94,17 @@ let spawn_benchmark ~bench_name ~bench_num ~nsamples ~determinizer ~save_to
        ~bench_num
        ~save_to
        ~nsamples
-       ~determinizer
        ?seed
        ?config_dir
        ?csv_dump
        ())
 
-let benchmark ~bench_name ~bench_num ~nsamples ~determinizer ~save_to ?seed
-    ?config_dir ?csv_dump snoop =
+let benchmark ~bench_name ~bench_num ~nsamples ~save_to ?seed ?config_dir
+    ?csv_dump snoop =
   spawn_benchmark
     ~bench_name
     ~bench_num
     ~nsamples
-    ~determinizer
     ~save_to
     ?seed
     ?config_dir
