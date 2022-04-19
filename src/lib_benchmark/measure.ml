@@ -26,21 +26,21 @@
 
 open Stats
 
-type determinizer_option = Percentile of int | Mean
-
 type options = {
   flush_cache : [`Cache_megabytes of int | `Dont];
   stabilize_gc : bool;
   seed : int option;
   nsamples : int;
-  determinizer : determinizer_option;
   cpu_affinity : int option;
   bench_number : int;
   minor_heap_size : [`words of int];
   config_dir : string option;
 }
 
-type 'workload timed_workload = {workload : 'workload; qty : float}
+type 'workload timed_workload = {
+  workload : 'workload;  (** Workload associated to the measurement *)
+  measures : Maths.vector;  (** Collected measurements *)
+}
 
 type 'workload workload_data = 'workload timed_workload list
 
@@ -65,24 +65,6 @@ type workloads_stats = {
 }
 
 (* ------------------------------------------------------------------------- *)
-
-let determinizer_option_encoding : determinizer_option Data_encoding.t =
-  let open Data_encoding in
-  union
-    [
-      case
-        ~title:"percentile"
-        (Tag 0)
-        Benchmark_helpers.int_encoding
-        (function Percentile i -> Some i | Mean -> None)
-        (fun i -> Percentile i);
-      case
-        ~title:"mean"
-        (Tag 1)
-        unit
-        (function Percentile _ -> None | Mean -> Some ())
-        (fun () -> Mean);
-    ]
 
 let flush_cache_encoding : [`Cache_megabytes of int | `Dont] Data_encoding.t =
   let open Data_encoding in
@@ -119,7 +101,6 @@ let options_encoding =
               stabilize_gc;
               seed;
               nsamples;
-              determinizer;
               cpu_affinity;
               bench_number;
               minor_heap_size;
@@ -129,7 +110,6 @@ let options_encoding =
            stabilize_gc,
            seed,
            nsamples,
-           determinizer,
            cpu_affinity,
            bench_number,
            minor_heap_size,
@@ -138,7 +118,6 @@ let options_encoding =
               stabilize_gc,
               seed,
               nsamples,
-              determinizer,
               cpu_affinity,
               bench_number,
               minor_heap_size,
@@ -148,18 +127,16 @@ let options_encoding =
            stabilize_gc;
            seed;
            nsamples;
-           determinizer;
            cpu_affinity;
            bench_number;
            minor_heap_size;
            config_dir;
          })
-       (tup9
+       (tup8
           flush_cache_encoding
           bool
           (option Benchmark_helpers.int_encoding)
           Benchmark_helpers.int_encoding
-          determinizer_option_encoding
           (option Benchmark_helpers.int_encoding)
           Benchmark_helpers.int_encoding
           heap_size_encoding
@@ -223,9 +200,9 @@ let vec_encoding : Maths.vector Data_encoding.t =
 let timed_workload_encoding workload_encoding =
   let open Data_encoding in
   conv
-    (fun {workload; qty} -> (workload, qty))
-    (fun (workload, qty) -> {workload; qty})
-    (obj2 (req "workload" workload_encoding) (req "qty" float))
+    (fun {workload; measures} -> (workload, measures))
+    (fun (workload, measures) -> {workload; measures})
+    (obj2 (req "workload" workload_encoding) (req "measures" vec_encoding))
 
 let workload_data_encoding workload_encoding =
   Data_encoding.list (timed_workload_encoding workload_encoding)
@@ -268,11 +245,6 @@ let pp_options fmtr (options : options) =
     | Some seed -> string_of_int seed
   in
   let nsamples = string_of_int options.nsamples in
-  let determinizer =
-    match options.determinizer with
-    | Percentile i -> sprintf "percentile %d" i
-    | Mean -> "mean"
-  in
   let cpu_affinity =
     match options.cpu_affinity with
     | None -> "none"
@@ -288,7 +260,6 @@ let pp_options fmtr (options : options) =
      seed=%s;@,\
      bench #=%s;@,\
      nsamples/bench=%s;@,\
-     determinizer=%s;@,\
      cpu_affinity=%s;@,\
      minor_heap_size=%d words;@,\
      config directory=%s }@]"
@@ -297,7 +268,6 @@ let pp_options fmtr (options : options) =
     seed
     bench_number
     nsamples
-    determinizer
     cpu_affinity
     minor_heap_size
     config_dir
@@ -404,7 +374,8 @@ let to_csv :
   let (module Bench) = bench in
   let lines =
     List.map
-      (fun {workload; qty} -> (Bench.workload_to_vector workload, qty))
+      (fun {workload; measures} ->
+        (Bench.workload_to_vector workload, measures))
       workload_data
   in
   let domain vec =
@@ -419,13 +390,17 @@ let to_csv :
   in
   let rows =
     List.map
-      (fun (vec, qty) ->
+      (fun (vec, measures) ->
         let row =
           List.map
             (fun name -> string_of_float (Sparse_vec.String.get vec name))
             names
         in
-        row @ [string_of_float qty])
+        let measures =
+          measures |> Maths.vector_to_seq |> Seq.map string_of_float
+          |> List.of_seq
+        in
+        row @ measures)
       lines
   in
   let names = names @ ["timings"] in
@@ -458,44 +433,16 @@ let farray_min_max (arr : float array) =
 let collect_stats : 'a workload_data -> workloads_stats =
  fun workload_data ->
   let time_dist_data =
-    List.rev_map (fun {qty; _} -> qty) workload_data |> Array.of_list
+    List.rev_map
+      (fun {measures; _} -> Array.of_seq (Maths.vector_to_seq measures))
+      workload_data
+    |> Array.concat
   in
   let (min, max) = farray_min_max time_dist_data in
   let dist = Emp.of_raw_data time_dist_data in
   let mean = Emp.Float.empirical_mean dist in
   let var = Emp.Float.empirical_variance dist in
   {max_time = max; min_time = min; mean_time = mean; variance = var}
-
-(* ------------------------------------------------------------------------- *)
-(* Removing outliers *)
-
-let cull_outliers :
-    nsigmas:float -> 'workload workload_data -> 'workload workload_data =
- fun ~nsigmas workload_data ->
-  let stats = collect_stats workload_data in
-  Format.eprintf "Removing outliers.@." ;
-  Format.eprintf "Stats: %a@." pp_stats stats ;
-  let delta = sqrt stats.variance *. nsigmas in
-  let upper_bound = stats.mean_time +. delta in
-  let lower_bound = stats.mean_time -. delta in
-  Format.eprintf "Validity interval: [%f, %f].@." lower_bound upper_bound ;
-  let outlier_count = ref 0 in
-  let valid =
-    List.filter
-      (fun {qty; _} ->
-        let cond = lower_bound <= qty && qty <= upper_bound in
-        if not cond then (
-          incr outlier_count ;
-          Format.eprintf "outlier detected: %f@." qty) ;
-        cond)
-      workload_data
-  in
-  let total = List.length workload_data in
-  Format.eprintf
-    "Removed %d outliers out of %d elements.@."
-    !outlier_count
-    total ;
-  valid
 
 (* ------------------------------------------------------------------------- *)
 (* Benchmarking *)
@@ -529,18 +476,6 @@ let compute_empirical_timing_distribution :
   let shape = Linalg.Tensor.Int.rank_one nsamples in
   Linalg.Vec.Float.make shape (fun i -> buffer.{i + start})
  [@@ocaml.inline]
-
-let determinizer_from_options options =
-  match options.determinizer with
-  | Percentile i ->
-      let perc = float_of_int i *. 0.01 in
-      fun dist ->
-        let dist = Maths.vector_to_array dist in
-        Emp.quantile (module Basic_structures.Std.Float) dist perc
-  | Mean ->
-      fun dist ->
-        let dist = Maths.vector_to_array dist in
-        Emp.Float.empirical_mean dist
 
 let seed_init_from_options (options : options) =
   match options.seed with
@@ -610,7 +545,6 @@ let perform_benchmark (type c t) (options : options)
   let benchmarks =
     Bench.create_benchmarks ~rng_state ~bench_num:options.bench_number config
   in
-  let determinizer = determinizer_from_options options in
   gc_init_from_options options ;
   cpu_affinity_from_options options ;
   let progress =
@@ -627,7 +561,7 @@ let perform_benchmark (type c t) (options : options)
         Gc.compact () ;
         match benchmark_fun () with
         | Generator.Plain {workload; closure} ->
-            let qty_dist =
+            let measures =
               compute_empirical_timing_distribution
                 ~closure
                 ~nsamples:options.nsamples
@@ -636,11 +570,10 @@ let perform_benchmark (type c t) (options : options)
                 ~flush_cache:options.flush_cache
                 ~stabilize_gc:options.stabilize_gc
             in
-            let qty = determinizer qty_dist in
-            {workload; qty} :: workload_data
+            {workload; measures} :: workload_data
         | Generator.With_context {workload; closure; with_context} ->
             with_context (fun context ->
-                let qty_dist =
+                let measures =
                   compute_empirical_timing_distribution
                     ~closure:(fun () -> closure context)
                     ~nsamples:options.nsamples
@@ -649,8 +582,7 @@ let perform_benchmark (type c t) (options : options)
                     ~flush_cache:options.flush_cache
                     ~stabilize_gc:options.stabilize_gc
                 in
-                let qty = determinizer qty_dist in
-                {workload; qty} :: workload_data)
+                {workload; measures} :: workload_data)
         | Generator.With_probe {workload; probe; closure} ->
             reset_memory
               ~stabilize_gc:options.stabilize_gc
@@ -661,10 +593,9 @@ let perform_benchmark (type c t) (options : options)
             List.fold_left
               (fun acc aspect ->
                 let results = probe.Generator.get aspect in
-                let qty_dist = Maths.vector_of_array (Array.of_list results) in
-                let qty = determinizer qty_dist in
+                let measures = Maths.vector_of_array (Array.of_list results) in
                 let workload = workload aspect in
-                {workload; qty} :: acc)
+                {workload; measures} :: acc)
               workload_data
               aspects)
       []

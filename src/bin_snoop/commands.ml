@@ -49,8 +49,6 @@ module Benchmark_cmd = struct
 
   let set_nsamples nsamples options = {options with nsamples}
 
-  let set_determinizer determinizer options = {options with determinizer}
-
   let set_cpu_affinity cpu_affinity options = {options with cpu_affinity}
 
   let set_save_file save_file options = {options with save_file}
@@ -74,7 +72,6 @@ module Benchmark_cmd = struct
         stabilize_gc = false;
         seed = None;
         nsamples = 3000;
-        determinizer = Percentile 50;
         cpu_affinity = None;
         bench_number = 300;
         minor_heap_size = `words (256 * 1024);
@@ -117,7 +114,6 @@ module Benchmark_cmd = struct
   let benchmark_handler
       ( cache,
         gc,
-        det,
         nsamples,
         seed,
         cpu_affinity,
@@ -129,7 +125,6 @@ module Benchmark_cmd = struct
       default_benchmark_options.options
       |> lift_opt set_flush_cache cache
       |> set_stabilize_gc gc
-      |> lift_opt set_determinizer det
       |> lift_opt set_nsamples nsamples
       |> lift_opt set_seed seed
       |> set_cpu_affinity cpu_affinity
@@ -167,34 +162,6 @@ module Benchmark_cmd = struct
         ~doc:"Major GC until fixpoint before each measurement"
         ~long:"stabilize-gc"
         ()
-
-    (* Sum type [mean| percentile [1-100]] argument --determinizer *)
-    let determinizer_arg =
-      let determinizer_arg_param =
-        Clic.parameter
-          ~autocomplete:(fun () -> Lwt.return_ok ["mean"; "percentile@[0-100]"])
-          (fun (_ : unit) parsed ->
-            match parsed with
-            | "mean" -> Lwt.return_ok Mean
-            | s -> (
-                let error () =
-                  Printf.eprintf "Wrong determinizer specification.\n" ;
-                  exit 1
-                in
-                match String.split_on_char '@' s with
-                | ["percentile"; i] ->
-                    let i =
-                      Option.value_f (int_of_string_opt i) ~default:error
-                    in
-                    if i < 1 || i > 100 then error ()
-                    else Lwt.return_ok (Percentile i)
-                | _ -> error ()))
-      in
-      Clic.arg
-        ~doc:"Method for determinizing empirical timing distribution"
-        ~long:"determinizer"
-        ~placeholder:"{mean | percentile@[1-100]}"
-        determinizer_arg_param
 
     (* Int argument --cpu-affinity
        Parameter: Id of the CPU where to preferentially pin the benchmark *)
@@ -285,10 +252,9 @@ module Benchmark_cmd = struct
 
   let options =
     let open Options in
-    Clic.args10
+    Clic.args9
       flush_cache_arg
       stabilize_gc_arg
-      determinizer_arg
       nsamples_arg
       seed_arg
       cpu_affinity_arg
