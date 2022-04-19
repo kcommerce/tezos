@@ -41,7 +41,10 @@ type problem =
     }
   | Degenerate of {predicted : matrix; measured : matrix}
 
-type solution = {mapping : (Free_variable.t * float) list; weights : matrix}
+type solution = {
+  mapping : (Free_variable.t * Maths.vector) list;
+  weights : matrix;
+}
 
 type solver =
   | Ridge of {alpha : float; normalize : bool}
@@ -262,13 +265,15 @@ let problem_to_csv : problem -> Csv.csv = function
       let measured_csv = timing_matrix_to_csv "timings" measured in
       Csv.concat predicted_csv measured_csv
 
-let solution_to_csv : solution -> Csv.csv option =
- fun {mapping; _} ->
+let solution_to_csv : solution -> (Maths.vector -> float) -> Csv.csv option =
+ fun {mapping; _} estimator ->
   match mapping with
   | [] -> None
   | _ ->
       let headers = List.map (fun (fv, _) -> fv_to_string fv) mapping
-      and row = List.map (fun x -> Float.to_string (snd x)) mapping in
+      and row =
+        List.map (fun (_, vec) -> Float.to_string (estimator vec)) mapping
+      in
       Some [headers; row]
 
 (* -------------------------------------------------------------------------- *)
@@ -341,7 +346,7 @@ let solve_problem : problem -> solver -> solution =
         let mapping =
           NMap.fold
             (fun variable dim acc ->
-              let param = Matrix.get weights (0, dim) in
+              let param = Matrix.row weights dim in
               (variable, param) :: acc)
             nmap
             []

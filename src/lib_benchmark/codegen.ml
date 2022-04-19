@@ -127,15 +127,16 @@ module Lift_then_print = Costlang.Let_lift (Codegen)
 
 (* ------------------------------------------------------------------------- *)
 (* The data required to perform code generation is a map from variables to
-   (floating point) coefficients. *)
-type solution = float Free_variable.Map.t
+   vectors. These vectors represent a set of samples from the true solution
+   distribution. *)
+type solution = Maths.vector Free_variable.Map.t
 
 let load_solution (fn : string) : solution =
   let infile = open_in fn in
   try
-    let res = Marshal.from_channel infile in
+    let res : float array Free_variable.Map.t = Marshal.from_channel infile in
     close_in infile ;
-    res
+    Free_variable.Map.map Maths.vector_of_array res
   with exn ->
     close_in infile ;
     Format.eprintf "Codegen.load_solution: could not load %s@." fn ;
@@ -143,18 +144,19 @@ let load_solution (fn : string) : solution =
 
 let save_solution (s : solution) (fn : string) =
   let outfile = open_out fn in
+  let s = Free_variable.Map.map Maths.vector_to_array s in
   Marshal.to_channel outfile s [] ;
   close_out outfile
 
 (* ------------------------------------------------------------------------- *)
 
 let codegen (Model.For_codegen model) (sol : solution)
-    (transform : Costlang.transform) =
+    (transform : Costlang.transform) (statistics : Maths.vector -> float) =
   let subst fv =
     match Free_variable.Map.find fv sol with
     | None ->
         raise (Fixed_point_transform.Codegen_error (Variable_not_found fv))
-    | Some f -> f
+    | Some vec -> statistics vec
   in
   let module T = (val transform) in
   let module Impl = T (Lift_then_print) in
@@ -173,11 +175,12 @@ let codegen (Model.For_codegen model) (sol : solution)
       let expr = Lift_then_print.prj @@ Impl.prj @@ Subst_impl.prj M.model in
       Some expr
 
-let codegen_module models sol transform =
+let codegen_module models sol transform statistics =
   let items =
     List.filter_map
       (fun (name, model) ->
-        codegen model sol transform |> Option.map (fun expr -> (name, expr)))
+        codegen model sol transform statistics
+        |> Option.map (fun expr -> (name, expr)))
       models
   in
   make_module items

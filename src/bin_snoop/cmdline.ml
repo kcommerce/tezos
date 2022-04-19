@@ -28,7 +28,7 @@
 
 (* Benchmark command related types *)
 
-type determinizer_option = Percentile of int | Mean
+type estimator_option = Percentile of int | Mean
 
 type storage_kind =
   | Memory
@@ -45,7 +45,12 @@ type benchmark_options = {
   csv_export : string option;
 }
 
-type codegen_options =
+type codegen_options = {
+  fixed_point_transform : codegen_fixed_point_transform;
+  estimator : estimator_option;
+}
+
+and codegen_fixed_point_transform =
   | No_transform
   | Fixed_point_transform of Fixed_point_transform.options
 
@@ -74,7 +79,10 @@ type infer_parameters_options = {
   (* Serialise solution to given file *)
   dot_file : string option;
   (* Export dependency graph to graphviz format *)
-  display_options : Display.options; (* Display options *)
+  display_options : Display.options;
+  (* Display options *)
+  estimator : estimator_option;
+      (* How do we estimate values from distributions *)
 }
 
 (* Outcome of command-line parsing. *)

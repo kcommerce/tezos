@@ -404,12 +404,13 @@ let eval_affine (aff : Costlang.affine) (eval : Free_variable.t -> float) =
   eval_mset aff.linear_comb eval +. aff.const
 
 let validator_empirical workload_data (problem : Inference.problem)
-    (solution : Inference.solution) =
+    (solution : Inference.solution) estimator =
   let open Result_syntax in
   let {Inference.mapping; _} = solution in
   let valuation name =
     WithExceptions.Option.get ~loc:__LOC__
     @@ List.assoc ~equal:Free_variable.equal name mapping
+    |> estimator
   in
   let predicted =
     match problem with
@@ -457,7 +458,8 @@ let raw_workload (workload_data : (Sparse_vec.String.t * float array) list) =
         [Histogram.hist ~binwidth:50.0 ~points ()])
     workload_data
 
-let perform_plot ~measure ~model_name ~problem ~solution ~plot_target ~options =
+let perform_plot ~measure ~model_name ~problem ~solution ~estimator ~plot_target
+    ~options =
   opts := options ;
   let (Measure.Measurement ((module Bench), measurement)) = measure in
   let filename ?index kind =
@@ -511,5 +513,5 @@ let perform_plot ~measure ~model_name ~problem ~solution ~plot_target ~options =
   (try_plot plot_target "emp" @@ empirical workload_data)
   @ (try_plot plot_target "validation" @@ validator problem solution)
   @ (try_plot plot_target "emp-validation"
-    @@ validator_empirical workload_data problem solution)
+    @@ validator_empirical workload_data problem solution estimator)
   @ raw

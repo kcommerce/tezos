@@ -313,6 +313,7 @@ module Infer_cmd = struct
       save_solution = None;
       dot_file = None;
       display_options = Display.default_options;
+      estimator = Percentile 50;
     }
 
   let set_print_problem print_problem options = {options with print_problem}
@@ -618,11 +619,12 @@ module Codegen_cmd = struct
       exit 1
 
   let codegen_handler json solution model_name () =
-    let codegen_options =
+    let fixed_point_transform =
       match json with
       | None -> No_transform
       | Some json_file -> load_fixed_point_parameters json_file
     in
+    let codegen_options = {fixed_point_transform; estimator = Percentile 50} in
     commandline_outcome_ref :=
       Some (Codegen {solution; model_name; codegen_options}) ;
     Lwt.return_ok ()
@@ -675,11 +677,12 @@ module Codegen_all_cmd = struct
   include Codegen_cmd
 
   let codegen_all_handler json solution matching () =
-    let codegen_options =
+    let fixed_point_transform =
       match json with
       | None -> No_transform
       | Some json_file -> load_fixed_point_parameters json_file
     in
+    let codegen_options = {fixed_point_transform; estimator = Percentile 50} in
     commandline_outcome_ref :=
       Some (Codegen_all {solution; matching; codegen_options}) ;
     Lwt.return_ok ()

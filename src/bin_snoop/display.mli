@@ -72,6 +72,7 @@ val perform_plot :
   model_name:string ->
   problem:Inference.problem ->
   solution:Inference.solution ->
+  estimator:(Maths.vector -> float) ->
   plot_target:plot_target ->
   options:options ->
   string list

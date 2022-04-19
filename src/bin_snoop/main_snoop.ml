@@ -49,6 +49,14 @@ let list_all_benchmarks formatter =
 
 let benchmark_assoc name = Registration.find_benchmark name
 
+let estimator (e : Cmdline.estimator_option) =
+  match e with
+  | Cmdline.Mean -> Maths.average
+  | Cmdline.Percentile p ->
+      fun vec ->
+        let p = 0.01 *. float_of_int p in
+        Stats.Emp.quantile (module Float) (Maths.vector_to_array vec) p
+
 let benchmark_cmd (bench_name : string) (bench_opts : Cmdline.benchmark_options)
     =
   let bench =
@@ -95,6 +103,7 @@ let rec infer_cmd model_name workload_data solver infer_opts =
 
 and infer_cmd_one_shot model_name workload_data solver
     (infer_opts : Cmdline.infer_parameters_options) =
+  let estimator = estimator infer_opts.estimator in
   let measure = Measure.load ~filename:workload_data in
   match measure with
   | Measure.Measurement
@@ -117,7 +126,9 @@ and infer_cmd_one_shot model_name workload_data solver
         | None -> Free_variable.Map.empty
         | Some filenames -> Override.load ~filenames
       in
-      let overrides name = Free_variable.Map.find name overrides_map in
+      let overrides name =
+        Option.map estimator (Free_variable.Map.find name overrides_map)
+      in
       let problem =
         Inference.make_problem ~data:workload_data ~model ~overrides
       in
@@ -144,6 +155,7 @@ and infer_cmd_one_shot model_name workload_data solver
               ~solution
               ~overrides_map
               ~short:false
+              ~estimator
               (Report.create_empty ~name:"Report")
           in
           Report.to_latex report
@@ -161,10 +173,11 @@ and infer_cmd_one_shot model_name workload_data solver
               Lwt.return_unit) ;
             Format.eprintf "Produced report on %s@." output_file
       in
-      process_output measure model_name problem solution infer_opts
+      process_output measure model_name problem solution estimator infer_opts
 
 and infer_cmd_full_auto model_name workload_data solver
     (infer_opts : Cmdline.infer_parameters_options) =
+  let estimator = estimator infer_opts.estimator in
   let workload_files = get_all_workload_data_files workload_data in
   let overrides_map =
     match infer_opts.override_files with
@@ -198,7 +211,9 @@ and infer_cmd_full_auto model_name workload_data solver
       (fun workload_file (overrides_map, report) ->
         Format.eprintf "Processing: %s@." workload_file ;
         let measure = Hashtbl.find measurements workload_file in
-        let overrides var = Free_variable.Map.find var overrides_map in
+        let overrides var =
+          Option.map estimator (Free_variable.Map.find var overrides_map)
+        in
         let (Measure.Measurement ((module Bench), m)) = measure in
         let model =
           match Dep_graph.find_model_or_generic model_name Bench.models with
@@ -224,6 +239,7 @@ and infer_cmd_full_auto model_name workload_data solver
                ~problem
                ~solution
                ~overrides_map
+               ~estimator
                ?report_folder
                ~short:true)
             report
@@ -231,16 +247,17 @@ and infer_cmd_full_auto model_name workload_data solver
         let overrides_map =
           List.fold_left
             (fun map (variable, solution) ->
+              let estimated_sol = estimator solution in
               Format.eprintf
-                "Adding solution %a := %f@."
+                "Adding solution %a with estimate %f@."
                 Free_variable.pp
                 variable
-                solution ;
+                estimated_sol ;
               Free_variable.Map.add variable solution map)
             overrides_map
             solution.mapping
         in
-        perform_plot measure model_name problem solution infer_opts ;
+        perform_plot measure model_name problem solution estimator infer_opts ;
         perform_csv_export solution infer_opts ;
         (overrides_map, report))
       graph
@@ -279,23 +296,25 @@ and solver_of_string (solver : string)
       list_solvers Format.err_formatter ;
       exit 1
 
-and process_output measure model_name problem solution infer_opts =
+and process_output measure model_name problem solution estimator infer_opts =
   perform_csv_export solution infer_opts ;
   let map = Free_variable.Map.of_seq (List.to_seq solution.mapping) in
   perform_save_solution map infer_opts ;
-  perform_plot measure model_name problem solution infer_opts
+  perform_plot measure model_name problem solution estimator infer_opts
 
 and perform_csv_export solution (infer_opts : Cmdline.infer_parameters_options)
     =
   match infer_opts.csv_export with
   | None -> ()
   | Some filename -> (
-      let solution_csv_opt = Inference.solution_to_csv solution in
+      let solution_csv_opt =
+        Inference.solution_to_csv solution (estimator infer_opts.estimator)
+      in
       match solution_csv_opt with
       | None -> ()
       | Some solution_csv -> Csv.append_columns ~filename solution_csv)
 
-and perform_save_solution (solution : float Free_variable.Map.t)
+and perform_save_solution (solution : Maths.vector Free_variable.Map.t)
     (infer_opts : Cmdline.infer_parameters_options) =
   match infer_opts.save_solution with
   | None -> ()
@@ -303,7 +322,7 @@ and perform_save_solution (solution : float Free_variable.Map.t)
       Codegen.save_solution solution filename ;
       Format.eprintf "Saved solution to %s@." filename
 
-and perform_plot measure model_name problem solution
+and perform_plot measure model_name problem solution estimator
     (infer_opts : Cmdline.infer_parameters_options) =
   if infer_opts.plot then
     ignore
@@ -312,6 +331,7 @@ and perform_plot measure model_name problem solution
          ~model_name
          ~problem
          ~solution
+         ~estimator
          ~plot_target:Display.Show
          ~options:infer_opts.display_options
   else ()
@@ -341,7 +361,7 @@ let codegen_cmd solution model_name codegen_options =
       exit 1
   | Some model ->
       let transform =
-        match codegen_options with
+        match codegen_options.Cmdline.fixed_point_transform with
         | Cmdline.No_transform ->
             ((module Costlang.Identity) : Costlang.transform)
         | Cmdline.Fixed_point_transform options ->
@@ -352,7 +372,13 @@ let codegen_cmd solution model_name codegen_options =
             ((module Transform) : Costlang.transform)
       in
       let code =
-        match Codegen.codegen model sol transform with
+        match
+          Codegen.codegen
+            model
+            sol
+            transform
+            (estimator codegen_options.estimator)
+        with
         | exception e ->
             Format.eprintf
               "Error in code generation for model %s, exiting@."
@@ -373,7 +399,7 @@ let codegen_all_cmd solution regexp codegen_options =
   let sol = Codegen.load_solution solution in
   let models = List.filter ok (Registration.all_registered_models ()) in
   let transform =
-    match codegen_options with
+    match codegen_options.Cmdline.fixed_point_transform with
     | Cmdline.No_transform -> ((module Costlang.Identity) : Costlang.transform)
     | Cmdline.Fixed_point_transform options ->
         let module P = struct
@@ -382,7 +408,13 @@ let codegen_all_cmd solution regexp codegen_options =
         let module Transform = Fixed_point_transform.Apply (P) in
         ((module Transform) : Costlang.transform)
   in
-  let result = Codegen.codegen_module models sol transform in
+  let result =
+    Codegen.codegen_module
+      models
+      sol
+      transform
+      (estimator codegen_options.estimator)
+  in
   Codegen.pp_structure_item Format.std_formatter result
 
 (* -------------------------------------------------------------------------- *)

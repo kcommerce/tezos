@@ -25,7 +25,7 @@
 
 (* An override file stores a mapping from variables to inferred values. *)
 
-type t = float Free_variable.Map.t
+type t = Maths.vector Free_variable.Map.t
 
 let add_into_map name duration map =
   let name = Free_variable.of_string name in
@@ -38,26 +38,30 @@ let add_into_map name duration map =
 
 let load_file ~filename map =
   let lines = Csv.import ~filename () in
-  let (header, values) =
+  let (header, rows) =
     match lines with
-    | [] | [_] | _ :: _ :: _ :: _ ->
-        Stdlib.failwith "Override.load: invalid csv"
-    | [header; overrides] -> (header, overrides)
+    | [] | [_] -> Stdlib.failwith "Override.load_file: invalid csv"
+    | header :: rows -> (header, rows)
   in
-  List.fold_left2
-    ~when_different_lengths:()
-    (fun map name coeff ->
-      let coeff_float =
-        try float_of_string coeff
-        with Failure _ ->
-          Stdlib.failwith ("Override.load: invalid coeff " ^ coeff)
-      in
-      add_into_map name coeff_float map)
-    map
-    header
-    values
-  |> (* {!Csv.import} fails before this can *)
-  WithExceptions.Result.get_ok ~loc:__LOC__
+  let rows =
+    List.to_seq rows
+    |> Seq.map (fun l ->
+           List.to_seq l
+           |> Seq.map (fun x ->
+                  try float_of_string x
+                  with Failure _ ->
+                    Stdlib.failwith ("Override.load_file: invalid coeff " ^ x))
+           |> Array.of_seq)
+    |> Array.of_seq
+  in
+  let mat = Maths.matrix_of_array_array rows in
+  let seq =
+    List.mapi
+      (fun col var -> (Free_variable.of_string var, Maths.Matrix.col mat col))
+      header
+    |> List.to_seq
+  in
+  Free_variable.Map.add_seq seq map
 
 let load ~filenames : t =
   List.fold_left

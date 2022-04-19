@@ -228,8 +228,8 @@ let benchmark_options_table (bench_opts : Measure.options) =
   in
   ([Vbar; L; Vbar; L; Vbar], rows)
 
-let inferred_params_table (solution : Inference.solution) =
-  match Inference.solution_to_csv solution with
+let inferred_params_table (solution : Inference.solution) statistics =
+  match Inference.solution_to_csv solution statistics with
   | None -> None
   | Some solution_csv -> (
       match solution_csv with
@@ -252,7 +252,7 @@ let inferred_params_table (solution : Inference.solution) =
           let rows = Latex_syntax.Hline :: hdr :: data @ [Latex_syntax.Hline] in
           Some (spec, rows))
 
-let overrides_table (overrides : float Free_variable.Map.t) =
+let overrides_table (overrides : Maths.vector Free_variable.Map.t) statistics =
   if Free_variable.Map.is_empty overrides then None
   else
     let spec = Latex_syntax.[Vbar; L; Vbar; L; Vbar] in
@@ -261,8 +261,9 @@ let overrides_table (overrides : float Free_variable.Map.t) =
     in
     let data =
       Free_variable.Map.fold
-        (fun var value acc ->
+        (fun var vec acc ->
           let var = Format.asprintf "%a" Free_variable.pp var in
+          let value = statistics vec in
           Latex_syntax.Row [[maths var]; [maths (string_of_float value)]] :: acc)
         overrides
         []
@@ -327,7 +328,8 @@ let model_table (type c t) ((module Bench) : (c, t) Benchmark.poly) =
 
 let report ~(measure : Measure.packed_measurement)
     ~(solution : Inference.solution) ~(figs_files : string list)
-    ~(overrides_map : float Free_variable.Map.t) ~short : Latex_syntax.section =
+    ~(overrides_map : Maths.vector Free_variable.Map.t) ~short ~estimator :
+    Latex_syntax.section =
   let (Measure.Measurement ((module Bench), measurement)) = measure in
   let {Measure.bench_opts; workload_data; date = _} = measurement in
   (* let pp_step_model = model (module Pp) in *)
@@ -337,12 +339,12 @@ let report ~(measure : Measure.packed_measurement)
     Text [normal_text text; normal_text "Options used:"]
   in
   let overrides_table : section_content =
-    match overrides_table overrides_map with
+    match overrides_table overrides_map estimator with
     | None -> Text [normal_text "None."]
     | Some table -> Table table
   in
   let inferred_params : section_content =
-    match inferred_params_table solution with
+    match inferred_params_table solution estimator with
     | None -> Text [normal_text "None. All free parameters already set."]
     | Some table -> Table table
   in
@@ -394,7 +396,7 @@ let create_empty ~name = Latex_syntax.{title = name; sections = []}
 
 let add_section ~(measure : Measure.packed_measurement) ~(model_name : string)
     ~(problem : Inference.problem) ~(solution : Inference.solution)
-    ~overrides_map ~short ?report_folder document =
+    ~overrides_map ~short ~estimator ?report_folder document =
   let (Measure.Measurement ((module Bench), _)) = measure in
   let figs_files =
     let plot_target = Display.Save in
@@ -418,10 +420,13 @@ let add_section ~(measure : Measure.packed_measurement) ~(model_name : string)
       ~model_name
       ~problem
       ~solution
+      ~estimator
       ~plot_target
       ~options
   in
-  let section = report ~measure ~solution ~figs_files ~overrides_map ~short in
+  let section =
+    report ~measure ~solution ~figs_files ~overrides_map ~short ~estimator
+  in
   let open Latex_syntax in
   {document with sections = document.sections @ [section]}
 
