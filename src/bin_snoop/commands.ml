@@ -300,14 +300,14 @@ module Infer_cmd = struct
   (* -------------------------------------------------------------------------- *)
   (* Handling options for the "infer parameters" command *)
 
-  let default_infer_parameters_options =
+  let solver_names = ["lasso"; "ridge"; "nnls"; "blr"]
+
+  let default_infer_parameters_options inference_specific =
     {
       print_problem = false;
       csv_export = None;
       plot = false;
-      ridge_alpha = 1.0;
-      lasso_alpha = 1.0;
-      lasso_positive = false;
+      inference_specific;
       override_files = None;
       report = NoReport;
       save_solution = None;
@@ -316,17 +316,86 @@ module Infer_cmd = struct
       estimator = Percentile 50;
     }
 
+  let default_lasso = Lasso_options {lasso_alpha = 1.0; lasso_positive = false}
+
+  let default_ridge = Ridge_options {ridge_alpha = 1.0}
+
+  let default_nnls = NNLS_options
+
+  let default_blr =
+    BLR_options
+      {
+        blr_burn_in = 1000;
+        blr_samples = 500;
+        blr_subsample = 100;
+        blr_seed = None;
+      }
+
   let set_print_problem print_problem options = {options with print_problem}
 
   let set_csv_export csv_export options = {options with csv_export}
 
   let set_plot plot options = {options with plot}
 
-  let set_ridge_alpha ridge_alpha options = {options with ridge_alpha}
+  let set_ridge_alpha ridge_alpha options =
+    match options.inference_specific with
+    | Ridge_options {ridge_alpha = _} ->
+        {options with inference_specific = Ridge_options {ridge_alpha}}
+    | _ -> options
 
-  let set_lasso_alpha lasso_alpha options = {options with lasso_alpha}
+  let set_lasso_alpha lasso_alpha options =
+    match options.inference_specific with
+    | Lasso_options payload ->
+        {
+          options with
+          inference_specific = Lasso_options {payload with lasso_alpha};
+        }
+    | _ -> options
 
-  let set_lasso_positive lasso_positive options = {options with lasso_positive}
+  let set_lasso_positive lasso_positive options =
+    match options.inference_specific with
+    | Lasso_options payload ->
+        {
+          options with
+          inference_specific = Lasso_options {payload with lasso_positive};
+        }
+    | _ -> options
+
+  let set_blr_burn_in blr_burn_in options =
+    if blr_burn_in <= 0 then invalid_arg "set_blr_burn_in: value is <= 0" ;
+    match options.inference_specific with
+    | BLR_options payload ->
+        {
+          options with
+          inference_specific = BLR_options {payload with blr_burn_in};
+        }
+    | _ -> options
+
+  let set_blr_samples blr_samples options =
+    if blr_samples <= 0 then invalid_arg "set_blr_samples: value is <= 0" ;
+    match options.inference_specific with
+    | BLR_options payload ->
+        {
+          options with
+          inference_specific = BLR_options {payload with blr_samples};
+        }
+    | _ -> options
+
+  let set_blr_subsample blr_subsample options =
+    if blr_subsample < 0 then invalid_arg "set_blr_subsample: value is < 0" ;
+    match options.inference_specific with
+    | BLR_options payload ->
+        {
+          options with
+          inference_specific = BLR_options {payload with blr_subsample};
+        }
+    | _ -> options
+
+  let set_blr_seed blr_seed options =
+    match options.inference_specific with
+    | BLR_options payload ->
+        {options with inference_specific = BLR_options {payload with blr_seed}}
+    | _ -> options
 
   let set_report report options =
     match report with
@@ -374,29 +443,47 @@ module Infer_cmd = struct
         ridge_alpha,
         lasso_alpha,
         lasso_positive,
+        blr_burn_in,
+        blr_samples,
+        blr_subsample,
+        blr_seed,
         report,
         override_files,
         save_solution,
         dot_file,
         plot_raw_workload,
         empirical_plot ) model_name workload_data solver () =
-    let options =
-      default_infer_parameters_options
-      |> set_print_problem print_problem
-      |> set_csv_export csv |> set_plot plot
-      |> lift_opt set_ridge_alpha ridge_alpha
-      |> lift_opt set_lasso_alpha lasso_alpha
-      |> set_lasso_positive lasso_positive
-      |> set_report report
-      |> set_override_files override_files
-      |> set_save_solution save_solution
-      |> set_dot_file dot_file
-      |> set_plot_raw_workload plot_raw_workload
-      |> lift_opt set_empirical_plot empirical_plot
-    in
-    commandline_outcome_ref :=
-      Some (Infer {model_name; workload_data; solver; infer_opts = options}) ;
-    Lwt.return_ok ()
+    let open Result_syntax in
+    Lwt.return
+    @@ let* solver =
+         match solver with
+         | "lasso" -> return default_lasso
+         | "ridge" -> return default_ridge
+         | "nnls" -> return default_nnls
+         | "blr" -> return default_blr
+         | _ -> tzfail (error_of_fmt "unknown solver: %s" solver)
+       in
+       let default = default_infer_parameters_options solver in
+       let options =
+         default
+         |> set_print_problem print_problem
+         |> set_csv_export csv |> set_plot plot
+         |> lift_opt set_ridge_alpha ridge_alpha
+         |> lift_opt set_lasso_alpha lasso_alpha
+         |> set_lasso_positive lasso_positive
+         |> lift_opt set_blr_burn_in blr_burn_in
+         |> lift_opt set_blr_samples blr_samples
+         |> lift_opt set_blr_subsample blr_subsample
+         |> set_blr_seed blr_seed |> set_report report
+         |> set_override_files override_files
+         |> set_save_solution save_solution
+         |> set_dot_file dot_file
+         |> set_plot_raw_workload plot_raw_workload
+         |> lift_opt set_empirical_plot empirical_plot
+       in
+       commandline_outcome_ref :=
+         Some (Infer {model_name; workload_data; infer_opts = options}) ;
+       return_unit
 
   module Options = struct
     (* Boolean argument --print-problem *)
@@ -499,6 +586,50 @@ module Infer_cmd = struct
         ~placeholder:"filename"
         override_file_param
 
+    let blr_burn_in_arg =
+      let blr_burn_in_arg_param =
+        parse_parameter
+          int_of_string_opt
+          "Error while parsing --blr-burn-in argument."
+      in
+      Clic.arg
+        ~doc:"Number of samples to burn before performing inference"
+        ~long:"blr-burn-in"
+        ~placeholder:"strictly positive int"
+        blr_burn_in_arg_param
+
+    let blr_samples_arg =
+      let blr_samples_arg_param =
+        parse_parameter
+          int_of_string_opt
+          "Error while parsing --blr-samples argument."
+      in
+      Clic.arg
+        ~doc:"Number of samples to take from posterior distribution"
+        ~long:"blr-samples"
+        ~placeholder:"strictly positive int"
+        blr_samples_arg_param
+
+    let blr_subsample_arg =
+      let blr_subsample_arg_param =
+        parse_parameter
+          int_of_string_opt
+          "Error while parsing --blr-subsample argument."
+      in
+      Clic.arg
+        ~doc:"Number of samples to drop between each posterior sample."
+        ~long:"blr-subsample"
+        ~placeholder:"positive int"
+        blr_subsample_arg_param
+
+    let blr_seed_arg =
+      let seed =
+        parse_parameter
+          int_of_string_opt
+          "Error while parsing --blr-seed argument."
+      in
+      Clic.arg ~doc:"RNG seed for BLR" ~long:"blr-seed" ~placeholder:"int" seed
+
     let plot_raw_workload_arg =
       let raw_workload_directory_param =
         Clic.parameter (fun (_ : unit) parsed -> Lwt.return_ok parsed)
@@ -534,13 +665,21 @@ module Infer_cmd = struct
 
   let options =
     let open Options in
-    Clic.args12
+    Clic.args16
       print_problem
       dump_csv_arg
       plot_arg
+      (* ridge options *)
       ridge_alpha_arg
+      (* lasso options *)
       lasso_alpha_arg
       lasso_positive_arg
+      (* blr options *)
+      blr_burn_in_arg
+      blr_samples_arg
+      blr_subsample_arg
+      blr_seed_arg
+      (* other options  *)
       report_arg
       override_arg
       save_solution_arg
@@ -562,8 +701,7 @@ module Infer_cmd = struct
       ~name:"REGRESSION-METHOD"
       ~desc:"Regression method used"
       (Clic.parameter
-         ~autocomplete:(fun _ ->
-           Lwt.return_ok ["lasso"; "ridge"; "nnls"; "blr"])
+         ~autocomplete:(fun _ -> Lwt.return_ok solver_names)
          (fun _ str -> Lwt.return_ok str))
 
   let params =

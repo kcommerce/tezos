@@ -37,7 +37,9 @@ let list_solvers formatter =
   Format.fprintf formatter "ridge --ridge-alpha=<float>@." ;
   Format.fprintf formatter "lasso --lasso-alpha=<float> --lasso-positive@." ;
   Format.fprintf formatter "nnls@." ;
-  Format.fprintf formatter "blr@."
+  Format.fprintf
+    formatter
+    "blr --blr-burn-in=<int> --blr-samples=<int> --blr-seed=<int>@."
 
 let list_all_benchmarks formatter =
   List.iter
@@ -86,23 +88,23 @@ let benchmark_cmd (bench_name : string) (bench_opts : Cmdline.benchmark_options)
         ~bench
         ~workload_data
 
-let rec infer_cmd model_name workload_data solver infer_opts =
+let rec infer_cmd model_name workload_data infer_opts =
   Pyinit.pyinit () ;
   let file_stats = Unix.stat workload_data in
   match file_stats.st_kind with
   | S_DIR ->
       (* User specified a directory. Automatically process all workload data in that directory. *)
-      infer_cmd_full_auto model_name workload_data solver infer_opts
+      infer_cmd_full_auto model_name workload_data infer_opts
   | S_REG ->
       (* User specified a workload data file. Only process that file. *)
-      infer_cmd_one_shot model_name workload_data solver infer_opts
+      infer_cmd_one_shot model_name workload_data infer_opts
   | _ ->
       Format.eprintf
         "Error: %s is neither a regular file nor a directory.@."
         workload_data ;
       exit 1
 
-and infer_cmd_one_shot model_name workload_data solver
+and infer_cmd_one_shot model_name workload_data
     (infer_opts : Cmdline.infer_parameters_options) =
   let estimator = estimator infer_opts.estimator in
   let measure = Measure.load ~filename:workload_data in
@@ -144,7 +146,7 @@ and infer_cmd_one_shot model_name workload_data solver
             Inference.pp_error_statistics
             err
       | _ -> ()) ;
-      let solver = solver_of_string solver infer_opts in
+      let solver = solver_of_string infer_opts in
       let solution = Inference.solve_problem problem solver in
       let () =
         let perform_report () =
@@ -176,7 +178,7 @@ and infer_cmd_one_shot model_name workload_data solver
       in
       process_output measure model_name problem solution estimator infer_opts
 
-and infer_cmd_full_auto model_name workload_data solver
+and infer_cmd_full_auto model_name workload_data
     (infer_opts : Cmdline.infer_parameters_options) =
   let estimator = estimator infer_opts.estimator in
   let workload_files = get_all_workload_data_files workload_data in
@@ -190,7 +192,7 @@ and infer_cmd_full_auto model_name workload_data solver
     | Cmdline.ReportToFile s -> Some (Filename.dirname s)
     | _ -> None
   in
-  let solver = solver_of_string solver infer_opts in
+  let solver = solver_of_string infer_opts in
   let (graph, measurements) = Dep_graph.load_files model_name workload_files in
   if Dep_graph.G.is_empty graph then (
     Format.eprintf "Empty dependency graph.@." ;
@@ -220,7 +222,7 @@ and infer_cmd_full_auto model_name workload_data solver
           match Dep_graph.find_model_or_generic model_name Bench.models with
           | None ->
               Format.eprintf
-                "No valid model (%s or generic) found in file %s. Availble \
+                "No valid model (%s or generic) found in file %s. Available \
                  models:.@."
                 model_name
                 workload_file ;
@@ -279,26 +281,22 @@ and infer_cmd_full_auto model_name workload_data solver
       Format.eprintf "Produced report on %s@." output_file
   | _ -> assert false
 
-and solver_of_string (solver : string)
-    (infer_opts : Cmdline.infer_parameters_options) =
-  match solver with
-  | "ridge" ->
-      Inference.Ridge {alpha = infer_opts.ridge_alpha; normalize = false}
-  | "lasso" ->
+and solver_of_string (infer_opts : Cmdline.infer_parameters_options) =
+  match infer_opts.inference_specific with
+  | Ridge_options {ridge_alpha} ->
+      Inference.Ridge {alpha = ridge_alpha; normalize = false}
+  | Lasso_options {lasso_alpha; lasso_positive} ->
       Inference.Lasso
-        {
-          alpha = infer_opts.lasso_alpha;
-          normalize = false;
-          positive = infer_opts.lasso_positive;
-        }
-  | "nnls" -> Inference.NNLS
-  | "blr" ->
+        {alpha = lasso_alpha; normalize = false; positive = lasso_positive}
+  | NNLS_options -> Inference.NNLS
+  | BLR_options {blr_burn_in; blr_samples; blr_subsample; blr_seed} ->
       Inference.Bayesian
-        {burn_in = 1000; nsamples = 1000; subsample = 100; seed = None}
-  | _ ->
-      Format.eprintf "Unknown solver name.@." ;
-      list_solvers Format.err_formatter ;
-      exit 1
+        {
+          burn_in = blr_burn_in;
+          nsamples = blr_samples;
+          subsample = blr_subsample;
+          seed = blr_seed;
+        }
 
 and process_output measure model_name problem solution estimator infer_opts =
   perform_csv_export solution infer_opts ;
@@ -445,8 +443,8 @@ let () =
       | Cmdline.No_command -> exit 0
       | Cmdline.Benchmark {bench_name; bench_opts} ->
           benchmark_cmd bench_name bench_opts
-      | Cmdline.Infer {model_name; workload_data; solver; infer_opts} ->
-          infer_cmd model_name workload_data solver infer_opts
+      | Cmdline.Infer {model_name; workload_data; infer_opts} ->
+          infer_cmd model_name workload_data infer_opts
       | Cmdline.Codegen {solution; model_name; codegen_options} ->
           codegen_cmd solution model_name codegen_options
       | Cmdline.Codegen_all {solution; matching; codegen_options} ->

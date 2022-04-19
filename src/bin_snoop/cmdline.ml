@@ -65,11 +65,7 @@ type infer_parameters_options = {
   (* Export solution to csv *)
   plot : bool;
   (* Plot solution *)
-  ridge_alpha : float;
-  (* Regularisation parameter for ridge regression *)
-  lasso_alpha : float;
-  (* Regularisation parameter for lasso regression *)
-  lasso_positive : bool;
+  inference_specific : inference_specific;
   (* Constrain lasso solution to be positive *)
   override_files : string list option;
   (* Source of CSV files for overriding free variables *)
@@ -85,6 +81,23 @@ type infer_parameters_options = {
       (* How do we estimate values from distributions *)
 }
 
+and inference_specific =
+  | Lasso_options of {
+      lasso_positive : bool;  (** Constrain lasso solution to be positive *)
+      lasso_alpha : float;  (** Regularisation parameter for lasso regression *)
+    }
+  | Ridge_options of {
+      ridge_alpha : float;  (** Regularisation parameter for ridge regression *)
+    }
+  | NNLS_options
+  | BLR_options of {
+      blr_burn_in : int;  (** [blr_burn_in] samples are thrown out *)
+      blr_samples : int;  (** Take [blr_samples] to form the posterior *)
+      blr_subsample : int;
+          (** Take each of the [blr_samples] every [blr_subsample] *)
+      blr_seed : int option;  (** Optional seed for the MCMC solver *)
+    }
+
 (* Outcome of command-line parsing. *)
 
 type command =
@@ -92,7 +105,6 @@ type command =
   | Infer of {
       model_name : string;
       workload_data : string;
-      solver : string;
       infer_opts : infer_parameters_options;
     }
   | Codegen of {
