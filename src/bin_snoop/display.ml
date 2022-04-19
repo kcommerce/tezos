@@ -166,17 +166,26 @@ let convert_workload_data :
 
 let style i =
   let open Style in
-  match i with
-  | 0 ->
-      default |> set_color Color.blue
-      |> set_point ~ptyp:Pointtype.disk ~psize:(point_size ())
-  | 1 ->
-      default |> set_color Color.red
-      |> set_point ~ptyp:Pointtype.box ~psize:(point_size ())
-  | 2 ->
-      default |> set_color Color.green
-      |> set_point ~ptyp:Pointtype.delta_solid ~psize:(point_size ())
-  | _ -> Stdlib.failwith "Display.style: style overflow"
+  let colors = [|Color.blue; Color.red; Color.green; Color.black|] in
+  let ptyps =
+    [|
+      Pointtype.circle;
+      Pointtype.disk;
+      Pointtype.delta;
+      Pointtype.delta_solid;
+      Pointtype.dot;
+      Pointtype.square;
+      Pointtype.box;
+      Pointtype.plus;
+      Pointtype.cross;
+      Pointtype.star;
+    |]
+  in
+  let color i = colors.(i mod Array.length colors) in
+  let ptyp i = ptyps.(i mod Array.length ptyps) in
+  default
+  |> set_color (color i)
+  |> set_point ~ptyp:(ptyp i) ~psize:(point_size ())
 
 let scatterplot_2d title (xaxis, input) outputs =
   let plots =
@@ -338,7 +347,41 @@ let column_to_array (m : Maths.matrix) =
   assert (cols = 1) ;
   Array.init rows (fun i -> Maths.Matrix.get m (0, i))
 
-let vector_to_array = Maths.vector_to_array
+let variables (problem : Inference.problem) {Inference.weights; _} =
+  match problem with
+  | Inference.Degenerate _ -> Result.error "Display.variables: degenerate plot"
+  | Inference.Non_degenerate {nmap; _} ->
+      let rows = Maths.row_dim weights in
+      let cols = Maths.col_dim weights in
+      let plots =
+        if cols > 1 then
+          (* Nontrivial posterior: plot histogram for each variable. *)
+          List.init ~when_negative_length:() rows (fun row_index ->
+              let row = Maths.Matrix.row weights row_index in
+              let std = Maths.std row in
+              let row = Maths.vector_to_array row in
+              let param =
+                Format.asprintf
+                  "%a"
+                  Free_variable.pp
+                  (Inference.NMap.nth_exn nmap row_index)
+                |> underscore_to_dash
+              in
+              plot2 ~xaxis:param ~yaxis:"freq" ~title:param
+              @@ [
+                   Histogram.hist
+                     ~binwidth:(std /. 10.)
+                     ~points:(Data.of_array (Array.map r1 row))
+                     ();
+                 ])
+          |> (* column count cannot be negative *)
+          WithExceptions.Result.get_ok ~loc:__LOC__
+        else if cols = 1 then
+          (* Trivial posterior: do nothing (user can get CSV). *)
+          []
+        else assert false
+      in
+      Result.return plots
 
 let validator (problem : Inference.problem) (solution : Inference.solution) =
   let open Result_syntax in
@@ -351,7 +394,7 @@ let validator (problem : Inference.problem) (solution : Inference.solution) =
       let columns =
         List.map
           (fun (c, m) ->
-            (Format.asprintf "%a" Free_variable.pp c, vector_to_array m))
+            (Format.asprintf "%a" Free_variable.pp c, Maths.vector_to_array m))
           columns
       in
       let rows = Maths.row_dim output in
@@ -361,12 +404,27 @@ let validator (problem : Inference.problem) (solution : Inference.solution) =
         timings.(i) <- process_empirical_data !opts.empirical_plot row
       done ;
       let predicted =
-        vector_to_array (Maths.Matrix.col predicted 0)
-        |> Array.map (fun x -> [|x|])
+        let cols = Maths.col_dim weights in
+        if cols <= 0 then assert false
+        else if cols = 1 then
+          [
+            Maths.vector_to_array (Maths.Matrix.col predicted 0)
+            |> Array.map (fun x -> [|x|]);
+          ]
+        else
+          let subset =
+            Stdlib.List.init cols Fun.id
+            |> List.shuffle ~rng:(Random.State.make_self_init ())
+            |> List.take_n 100
+          in
+          List.map
+            (fun col ->
+              Maths.vector_to_array (Maths.Matrix.col predicted col)
+              |> Array.map (fun x -> [|x|]))
+            subset
       in
-      let* plots =
-        plot_scatter "Validation (chosen basis)" columns [timings; predicted]
-      in
+      let data = predicted @ [timings] in
+      let* plots = plot_scatter "Validation (chosen basis)" columns data in
       return plots
 
 let is_trivial_workload workload = Array.for_all (fun x -> x = 1.0) workload
@@ -478,6 +536,7 @@ let perform_plot ~measure ~model_name ~problem ~solution ~estimator ~plot_target
   in
   let try_plot plot_target kind plot_result =
     match plot_result with
+    | Ok [] -> []
     | Ok plots -> (
         match plot_target with
         | Save ->
@@ -514,4 +573,5 @@ let perform_plot ~measure ~model_name ~problem ~solution ~estimator ~plot_target
   @ (try_plot plot_target "validation" @@ validator problem solution)
   @ (try_plot plot_target "emp-validation"
     @@ validator_empirical workload_data problem solution estimator)
+  @ (try_plot plot_target "solution" @@ variables problem solution)
   @ raw

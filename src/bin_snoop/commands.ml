@@ -562,7 +562,8 @@ module Infer_cmd = struct
       ~name:"REGRESSION-METHOD"
       ~desc:"Regression method used"
       (Clic.parameter
-         ~autocomplete:(fun _ -> Lwt.return_ok ["lasso"; "ridge"; "nnls"])
+         ~autocomplete:(fun _ ->
+           Lwt.return_ok ["lasso"; "ridge"; "nnls"; "blr"])
          (fun _ str -> Lwt.return_ok str))
 
   let params =

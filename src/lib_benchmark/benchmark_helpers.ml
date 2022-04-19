@@ -137,3 +137,11 @@ let rec map2 f xs ys () =
       match ys () with
       | Seq.Nil -> Nil
       | Cons (y, ys) -> Cons (f x y, map2 f xs ys))
+
+let rec take_one_every_k ~n ~k (xs : 'a Seq.t) : 'a Seq.t =
+ fun () ->
+  if n = 0 then Seq.Nil
+  else
+    match drop k xs () with
+    | Seq.Nil -> invalid_arg "take_one_every_k"
+    | Seq.Cons (elt, rest) -> Seq.Cons (elt, take_one_every_k ~n:(n - 1) ~k rest)

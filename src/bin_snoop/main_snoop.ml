@@ -36,7 +36,8 @@ let list_all_models formatter =
 let list_solvers formatter =
   Format.fprintf formatter "ridge --ridge-alpha=<float>@." ;
   Format.fprintf formatter "lasso --lasso-alpha=<float> --lasso-positive@." ;
-  Format.fprintf formatter "nnls@."
+  Format.fprintf formatter "nnls@." ;
+  Format.fprintf formatter "blr@."
 
 let list_all_benchmarks formatter =
   List.iter
@@ -291,6 +292,9 @@ and solver_of_string (solver : string)
           positive = infer_opts.lasso_positive;
         }
   | "nnls" -> Inference.NNLS
+  | "blr" ->
+      Inference.Bayesian
+        {burn_in = 1000; nsamples = 1000; subsample = 100; seed = None}
   | _ ->
       Format.eprintf "Unknown solver name.@." ;
       list_solvers Format.err_formatter ;

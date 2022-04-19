@@ -252,18 +252,18 @@ let inferred_params_table (solution : Inference.solution) statistics =
           let rows = Latex_syntax.Hline :: hdr :: data @ [Latex_syntax.Hline] in
           Some (spec, rows))
 
-let overrides_table (overrides : Maths.vector Free_variable.Map.t) statistics =
+let overrides_table (overrides : Maths.vector Free_variable.Map.t) estimator =
   if Free_variable.Map.is_empty overrides then None
   else
     let spec = Latex_syntax.[Vbar; L; Vbar; L; Vbar] in
     let hdr =
-      Latex_syntax.(Row [[normal_text "var"]; [normal_text "value (ns)"]])
+      Latex_syntax.(Row [[normal_text "var"]; [normal_text "estimate (ns)"]])
     in
     let data =
       Free_variable.Map.fold
         (fun var vec acc ->
           let var = Format.asprintf "%a" Free_variable.pp var in
-          let value = statistics vec in
+          let value = estimator vec in
           Latex_syntax.Row [[maths var]; [maths (string_of_float value)]] :: acc)
         overrides
         []
