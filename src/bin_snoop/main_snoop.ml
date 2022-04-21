@@ -283,11 +283,9 @@ and infer_cmd_full_auto model_name workload_data
 
 and solver_of_string (infer_opts : Cmdline.infer_parameters_options) =
   match infer_opts.inference_specific with
-  | Ridge_options {ridge_alpha} ->
-      Inference.Ridge {alpha = ridge_alpha; normalize = false}
+  | Ridge_options {ridge_alpha} -> Inference.Ridge {alpha = ridge_alpha}
   | Lasso_options {lasso_alpha; lasso_positive} ->
-      Inference.Lasso
-        {alpha = lasso_alpha; normalize = false; positive = lasso_positive}
+      Inference.Lasso {alpha = lasso_alpha; positive = lasso_positive}
   | NNLS_options -> Inference.NNLS
   | BLR_options {blr_burn_in; blr_samples; blr_subsample; blr_seed} ->
       Inference.Bayesian

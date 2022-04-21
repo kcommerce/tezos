@@ -47,8 +47,8 @@ type solution = {
 }
 
 type solver =
-  | Ridge of {alpha : float; normalize : bool}
-  | Lasso of {alpha : float; normalize : bool; positive : bool}
+  | Ridge of {alpha : float}
+  | Lasso of {alpha : float; positive : bool}
   | NNLS
   | Bayesian of {
       burn_in : int;
@@ -313,13 +313,13 @@ let wrap_python_solver ~input ~output solver =
   let output = to_scipy output in
   solver input output |> of_scipy
 
-let ridge ~alpha ~normalize ~input ~output =
+let ridge ~alpha ~input ~output =
   wrap_python_solver ~input ~output (fun input output ->
-      Scikit.LinearModel.ridge ~alpha ~normalize ~input ~output ())
+      Scikit.LinearModel.ridge ~alpha ~input ~output ())
 
-let lasso ~alpha ~normalize ~positive ~input ~output =
+let lasso ~alpha ~positive ~input ~output =
   wrap_python_solver ~input ~output (fun input output ->
-      Scikit.LinearModel.lasso ~alpha ~normalize ~positive ~input ~output ())
+      Scikit.LinearModel.lasso ~alpha ~positive ~input ~output ())
 
 let nnls ~input ~output =
   wrap_python_solver ~input ~output (fun input output ->
@@ -515,14 +515,11 @@ let solve_problem : problem -> solver -> solution =
   | Non_degenerate {input; output; nmap; _} ->
       let weights =
         match solver with
-        | Ridge {alpha; normalize} -> ridge ~alpha ~normalize ~input ~output
-        | Lasso {alpha; normalize; positive} ->
-            lasso ~alpha ~normalize ~positive ~input ~output
+        | Ridge {alpha} -> ridge ~alpha ~input ~output
+        | Lasso {alpha; positive} -> lasso ~alpha ~positive ~input ~output
         | NNLS -> nnls ~input ~output
         | Bayesian {burn_in; nsamples; subsample; seed} ->
-            let weights =
-              lasso ~alpha:1.0 ~positive:true ~normalize:false ~input ~output
-            in
+            let weights = lasso ~alpha:1.0 ~positive:true ~input ~output in
             let rng_state =
               match seed with
               | None -> Dagger.RNG.make_self_init ()
