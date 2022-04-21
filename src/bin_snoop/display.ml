@@ -284,38 +284,45 @@ let process_empirical_data empirical_plot data =
       List.map (fun q -> Stats.Emp.quantile (module Float) data q) qs
       |> Array.of_list
 
+module String_int_bij = Stats.Finbij.Make (String)
+
 let empirical_data (workload_data : (Sparse_vec.String.t * float array) list) =
   let samples = convert_workload_data workload_data in
   (* Extract name of variables and check well-formedness *)
   let variables =
-    List.rev_map (fun {workload; _} -> List.rev_map fst workload) samples
+    List.fold_left
+      (fun variables {workload; _} ->
+        List.fold_left
+          (fun variables (var, _) -> String.Set.add var variables)
+          variables
+          workload)
+      String.Set.empty
+      samples
+    |> String.Set.elements
   in
-  let variables = List.sort_uniq Stdlib.compare variables in
-  match variables with
-  | [] | _ :: _ :: _ ->
-      Format.kasprintf
-        Result.error
-        "Display.empirical_data: variables not named consistently@."
-  | [vars] ->
-      let rows = List.length samples in
-      let input_dims = List.length vars in
-      let columns = Array.make_matrix input_dims rows 0.0 in
-      let timings = Array.make rows [||] in
-      List.iteri
-        (fun i {workload; qty} ->
-          assert (Compare.List_length_with.(workload = input_dims)) ;
-          List.iteri
-            (fun input_dim (_, size) -> columns.(input_dim).(i) <- size)
-            workload ;
-          timings.(i) <- process_empirical_data !opts.empirical_plot qty)
-        samples ;
-      let columns = Array.to_list columns in
-      let named_columns =
-        List.combine ~when_different_lengths:() vars columns
-        |> (* [columns = Array.to_list (Array.init (List.length vars))] *)
-        WithExceptions.Result.get_ok ~loc:__LOC__
-      in
-      Ok (named_columns, timings)
+  let bij = String_int_bij.of_list variables in
+  let rows = List.length samples in
+  let input_dims = String_int_bij.support bij in
+  let columns = Array.make_matrix input_dims rows 0.0 in
+  let timings = Array.make rows [||] in
+  List.iteri
+    (fun i {workload; qty} ->
+      List.iter
+        (fun (var, size) ->
+          let input_dim = String_int_bij.idx_exn bij var in
+          columns.(input_dim).(i) <- size)
+        workload ;
+      timings.(i) <- process_empirical_data !opts.empirical_plot qty)
+    samples ;
+  let columns = Array.to_list columns in
+  let named_columns =
+    List.mapi
+      (fun i col ->
+        let var = String_int_bij.nth_exn bij i in
+        (var, col))
+      columns
+  in
+  Ok (named_columns, timings)
 
 let column_is_constant (v : Maths.vector) =
   let rows = Maths.vec_dim v in
