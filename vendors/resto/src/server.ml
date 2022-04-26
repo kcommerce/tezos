@@ -27,6 +27,32 @@
 open Lwt.Infix
 module ConnectionMap = Map.Make (Cohttp.Connection)
 
+(* FIXME(swann): bikeshed name *)
+(** A middleware that wraps the operation of a [Cohttp] server.
+    We implement this idea as a transformer for the request -> response callback,
+    which lets the middleware modify the arguments passed to the callback, run it,
+    and then postprocess the response.
+
+    For most use-cases, this functionality will not be required, in which case
+    [Null_middleware] can be used.
+  *)
+module type MIDDLEWARE = sig
+  val transform_callback :
+    callback:(Cohttp_lwt_unix.Server.conn ->
+              Cohttp.Request.t ->
+              Cohttp_lwt.Body.t ->
+              Cohttp_lwt_unix.Server.response_action Lwt.t) ->
+    conn:Cohttp_lwt_unix.Server.conn ->
+    req:Cohttp.Request.t ->
+    body:Cohttp_lwt.Body.t ->
+    Cohttp_lwt_unix.Server.response_action Lwt.t
+end
+
+(** No-op middleware. Most users will use this. *)
+module Null_middleware : MIDDLEWARE = struct
+  let transform_callback ~callback ~conn ~req ~body = callback conn req body
+end
+
 let ( >>? ) v f = match v with Ok x -> f x | Error err -> Lwt.return_error err
 
 let lwt_return_ok_response r = Lwt.return_ok (`Response r)
@@ -85,7 +111,7 @@ end
 
 let ( >>=? ) = Lwt_result.bind
 
-module Make_selfserver (Encoding : Resto.ENCODING) (Log : LOGGING) = struct
+module Make_selfserver (Encoding : Resto.ENCODING) (Log : LOGGING) (Middleware : MIDDLEWARE) = struct
   open Cohttp
   module Service = Resto.MakeService (Encoding)
   module Directory = Resto_directory.Make (Encoding)
@@ -302,8 +328,8 @@ module Make_selfserver (Encoding : Resto.ENCODING) (Log : LOGGING) = struct
   end
 end
 
-module Make (Encoding : Resto.ENCODING) (Log : LOGGING) = struct
-  include Make_selfserver (Encoding) (Log)
+module Make (Encoding : Resto.ENCODING) (Log : LOGGING) (Middleware : MIDDLEWARE) = struct
+  include Make_selfserver (Encoding) (Log) (Mid)
   open Cohttp
 
   type server = {
@@ -411,6 +437,7 @@ module Make (Encoding : Resto.ENCODING) (Log : LOGGING) = struct
               \            encoding)"
               con_string
             >>= fun () ->
+            (* FIXME this will need special handling *)
             Lwt.return_ok
               (`Expert (Handlers.handle_rpc_answer_chunk ~headers output_seq a))
         | `OkStream o ->
@@ -519,12 +546,13 @@ module Make (Encoding : Resto.ENCODING) (Log : LOGGING) = struct
                  in
                  lwt_return_response (Response.make ~status ~headers (), body))
        in
+       let modified_callback conn req body = Mid.transform_callback ~callback ~conn ~req ~body in
        Cohttp_lwt_unix.Server.create
          ~stop
          ~ctx
          ~mode
          ~on_exn
-         (Cohttp_lwt_unix.Server.make_response_action ~callback ~conn_closed ())) ;
+         (Cohttp_lwt_unix.Server.make_response_action ~callback:modified_callback ~conn_closed ())) ;
     Log.lwt_log_info "Server started (agent: %s)" server.agent >>= fun () ->
     Lwt.return server
 

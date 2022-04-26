@@ -24,6 +24,20 @@
 (*                                                                           *)
 (*****************************************************************************)
 
+module type MIDDLEWARE = sig
+  val transform_callback :
+    callback:(Cohttp_lwt_unix.Server.conn ->
+              Cohttp.Request.t ->
+              Cohttp_lwt.Body.t ->
+              Cohttp_lwt_unix.Server.response_action Lwt.t) ->
+    conn:Cohttp_lwt_unix.Server.conn ->
+    req:Cohttp.Request.t ->
+    body:Cohttp_lwt.Body.t ->
+    Cohttp_lwt_unix.Server.response_action Lwt.t
+end
+
+module Null_middleware : MIDDLEWARE
+
 (** Serving a directory of registered services. *)
 
 module type LOGGING = sig
@@ -48,7 +62,7 @@ module type LOGGING = sig
   val lwt_log_error : ('a, Format.formatter, unit, unit Lwt.t) format4 -> 'a
 end
 
-module Make (Encoding : Resto.ENCODING) (Log : LOGGING) : sig
+module Make (Encoding : Resto.ENCODING) (Log : LOGGING) (Middleware : MIDDLEWARE) : sig
   module Media_type : module type of struct
     include Media_type.Make (Encoding)
   end
@@ -81,7 +95,7 @@ end
 (** [Make_selfserver] is a functor that produces only the machinery necessary
     for local use. Specifically, it produces the values and types needed for the
     [Self_serving_client]. *)
-module Make_selfserver (Encoding : Resto.ENCODING) (Log : LOGGING) : sig
+module Make_selfserver (Encoding : Resto.ENCODING) (Log : LOGGING) (Middleware : MIDDLEWARE) : sig
   module Media_type : module type of struct
     include Media_type.Make (Encoding)
   end

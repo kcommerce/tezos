@@ -41,7 +41,8 @@
     [Server.Make.set_acl]). *)
 module Make
     (Encoding : Resto.ENCODING)
-    (Log : Resto_cohttp_server.Server.LOGGING) : sig
+    (Log : Resto_cohttp_server.Server.LOGGING)
+    (Middleware : Resto_cohttp_server.Server.MIDDLEWARE) : sig
   val launch :
     ?cors:Cors.t ->
     ?agent:string ->

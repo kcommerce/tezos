@@ -26,10 +26,10 @@
 open Lwt.Infix
 open Resto_cohttp_server
 
-module Make (Encoding : Resto.ENCODING) (Log : Server.LOGGING) = struct
+module Make (Encoding : Resto.ENCODING) (Log : Server.LOGGING) (Middleware : Server.MIDDLEWARE) = struct
   module Directory = Resto_directory.Make (Encoding)
   module Media_type = Media_type.Make (Encoding)
-  module Server = Server.Make_selfserver (Encoding) (Log)
+  module Server = Server.Make_selfserver (Encoding) (Log) (Mid)
 
   type self_server = {
     root : unit Directory.directory;
