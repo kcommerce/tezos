@@ -78,12 +78,12 @@ let tags_encoding : tags Data_encoding.t =
   conv Tags.elements Tags.of_list (list tag_encoding)
 
 module Request = struct
-  type 'a t =
-    | Add_pending : L1_operation.t -> unit t
+  type ('a, 'b) t =
+    | Add_pending : L1_operation.t -> (unit, error trace) t
     | New_tezos_head :
         Alpha_block_services.block_info * Alpha_block_services.block_info reorg
-        -> unit t
-    | Inject : unit t
+        -> (unit, error trace) t
+    | Inject : (unit, error trace) t
 
   type view = View : _ t -> view
 
@@ -169,7 +169,7 @@ module Dummy_event = struct
 end
 
 module Logger =
-  Tezos_shell.Worker_logger.Make (Dummy_event) (Request)
+  Worker_logger.Make (Dummy_event) (Request)
     (struct
       let worker_name = "tx_rollup_injector"
     end)
