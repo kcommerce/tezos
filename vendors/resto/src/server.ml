@@ -329,7 +329,7 @@ module Make_selfserver (Encoding : Resto.ENCODING) (Log : LOGGING) (Middleware :
 end
 
 module Make (Encoding : Resto.ENCODING) (Log : LOGGING) (Middleware : MIDDLEWARE) = struct
-  include Make_selfserver (Encoding) (Log) (Mid)
+  include Make_selfserver (Encoding) (Log) (Middleware)
   open Cohttp
 
   type server = {
@@ -546,7 +546,7 @@ module Make (Encoding : Resto.ENCODING) (Log : LOGGING) (Middleware : MIDDLEWARE
                  in
                  lwt_return_response (Response.make ~status ~headers (), body))
        in
-       let modified_callback conn req body = Mid.transform_callback ~callback ~conn ~req ~body in
+       let modified_callback conn req body = Middleware.transform_callback ~callback ~conn ~req ~body in
        Cohttp_lwt_unix.Server.create
          ~stop
          ~ctx

@@ -29,7 +29,7 @@ open Resto_cohttp_server
 module Make (Encoding : Resto.ENCODING) (Log : Server.LOGGING) (Middleware : Server.MIDDLEWARE) = struct
   module Directory = Resto_directory.Make (Encoding)
   module Media_type = Media_type.Make (Encoding)
-  module Server = Server.Make_selfserver (Encoding) (Log) (Mid)
+  module Server = Server.Make_selfserver (Encoding) (Log) (Middleware)
 
   type self_server = {
     root : unit Directory.directory;

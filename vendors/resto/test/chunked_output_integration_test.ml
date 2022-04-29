@@ -183,7 +183,7 @@ let child () =
   is_ok_result r (val_bwraf 7) ;
   Stdlib.exit 0
 
-module Server = Resto_cohttp_server.Server.Make (Encoding) (Logger)
+module Server = Resto_cohttp_server.Server.Make (Encoding) (Logger) (Resto_cohttp_server.Server.Null_middleware)
 
 let parent pid chunk_size =
   let media_types = media_types chunk_size in

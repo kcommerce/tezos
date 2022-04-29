@@ -53,6 +53,7 @@ module Self_serving_client =
   Resto_cohttp_self_serving_client.Self_serving_client.Make
     (Encoding)
     (NullLogger)
+    (Resto_cohttp_server.Server.Null_middleware)
 
 include Resto_directory.Make (Encoding)
 module Service = MakeService (Resto_json.Encoding)
