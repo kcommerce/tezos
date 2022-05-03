@@ -1370,11 +1370,11 @@ let tezos_context_memory =
         tezos_context_helpers;
       ]
 
-let tezos_context =
+let tezos_context_disk =
   public_lib
-    "tezos-context"
-    ~path:"src/lib_context"
-    ~synopsis:"Tezos: on-disk context abstraction for `tezos-node`"
+    "tezos-context.disk"
+    ~path:"src/lib_context/disk"
+    ~opam:"tezos-context"
     ~deps:
       [
         tezos_shell_services |> open_;
@@ -1394,6 +1394,13 @@ let tezos_context =
         tezos_context_memory;
       ]
 
+let tezos_context =
+  public_lib
+    "tezos-context"
+    ~path:"src/lib_context"
+    ~synopsis:"Tezos: on-disk context abstraction for `tezos-node`"
+    ~deps:[tezos_context_disk; tezos_context_memory]
+
 let _tezos_context_tests =
   test
     "test"
@@ -1403,7 +1410,7 @@ let _tezos_context_tests =
       [
         tezos_base |> open_ ~m:"TzPervasives";
         tezos_base_unix;
-        tezos_context |> open_;
+        tezos_context_disk |> open_;
         tezos_stdlib_unix |> open_;
         tezos_test_helpers;
         tezos_test_helpers_extra;
@@ -1420,7 +1427,7 @@ let _tezos_context_memory_tests =
       [
         tezos_base |> open_ ~m:"TzPervasives";
         tezos_base_unix;
-        tezos_context;
+        tezos_context_disk;
         tezos_context_memory;
         tezos_stdlib_unix |> open_;
         alcotest_lwt;
@@ -1992,13 +1999,14 @@ let _tezos_context_merkle_proof_tests =
       [
         tezos_base;
         tezos_base_unix;
-        tezos_context;
+        tezos_context_disk;
         tezos_context_encoding;
         tezos_stdlib_unix;
         qcheck_alcotest;
         tezos_test_helpers;
       ]
-    ~opens:["Tezos_base__TzPervasives"; "Tezos_context"; "Tezos_stdlib_unix"]
+    ~opens:
+      ["Tezos_base__TzPervasives"; "Tezos_context_disk"; "Tezos_stdlib_unix"]
     ~modules:["test_merkle_proof"]
 
 let tezos_validator_lib =
