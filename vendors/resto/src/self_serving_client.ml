@@ -26,10 +26,10 @@
 open Lwt.Infix
 open Resto_cohttp_server
 
-module Make (Encoding : Resto.ENCODING) (Log : Server.LOGGING) (Middleware : Server.MIDDLEWARE) = struct
+module Make (Encoding : Resto.ENCODING) (Log : Server.LOGGING) = struct
   module Directory = Resto_directory.Make (Encoding)
   module Media_type = Media_type.Make (Encoding)
-  module Server = Server.Make_selfserver (Encoding) (Log) (Middleware)
+  module Server = Server.Make_selfserver (Encoding) (Log)
 
   type self_server = {
     root : unit Directory.directory;
@@ -144,7 +144,9 @@ module Make (Encoding : Resto.ENCODING) (Log : Server.LOGGING) (Middleware : Ser
     end : Client.CALL)
 
   let launch ?(cors = Cors.default) ?(agent = Server.Agent.default_agent)
-      ?(acl = Acl.Allow_all {except = []}) ~media_types root =
+      ?(acl = Acl.Allow_all {except = []}) ?(middleware = Resto_cohttp_server.Server.null_middleware)
+      ~media_types root =
+    let _ = middleware in
     let default_media_type = Server.Media.default_media_type media_types in
     let medias : Server.Media.medias = {media_types; default_media_type} in
     create {root; cors; medias; agent; acl}

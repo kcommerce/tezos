@@ -41,12 +41,12 @@
     [Server.Make.set_acl]). *)
 module Make
     (Encoding : Resto.ENCODING)
-    (Log : Resto_cohttp_server.Server.LOGGING)
-    (Middleware : Resto_cohttp_server.Server.MIDDLEWARE) : sig
+    (Log : Resto_cohttp_server.Server.LOGGING) : sig
   val launch :
     ?cors:Cors.t ->
     ?agent:string ->
     ?acl:Acl.t ->
+    ?middleware:(module Resto_cohttp_server.Server.MIDDLEWARE) ->
     media_types:Media_type.Make(Encoding).t list ->
     unit Resto_directory.Make(Encoding).directory ->
     (module Client.CALL)

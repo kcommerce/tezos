@@ -155,7 +155,7 @@ let parent pid =
   | _, WEXITED 0 -> Lwt.return ()
   | _ -> assert false
 
-module Server = Resto_cohttp_server.Server.Make (Encoding) (Logger) (Resto_cohttp_server.Server.Null_middleware)
+module Server = Resto_cohttp_server.Server.Make (Encoding) (Logger)
 
 (* A signal setup with both soft and hard exits to test both behaviours *)
 let main () =

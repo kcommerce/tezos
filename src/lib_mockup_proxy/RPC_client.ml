@@ -54,7 +54,6 @@ module Call =
   Resto_cohttp_self_serving_client.Self_serving_client.Make
     (RPC_encoding)
     (NullLogger)
-    (Resto_cohttp_server.Server.Null_middleware)
 
 let local_ctxt (directory : unit RPC_directory.t) : RPC_context.generic =
   let local_client =

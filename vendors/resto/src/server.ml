@@ -34,7 +34,7 @@ module ConnectionMap = Map.Make (Cohttp.Connection)
     and then postprocess the response.
 
     For most use-cases, this functionality will not be required, in which case
-    [Null_middleware] can be used.
+    [null_middleware] can be used.
   *)
 module type MIDDLEWARE = sig
   val transform_callback :
@@ -49,9 +49,9 @@ module type MIDDLEWARE = sig
 end
 
 (** No-op middleware. Most users will use this. *)
-module Null_middleware : MIDDLEWARE = struct
+let null_middleware : (module MIDDLEWARE) = (module struct
   let transform_callback ~callback ~conn ~req ~body = callback conn req body
-end
+end)
 
 let ( >>? ) v f = match v with Ok x -> f x | Error err -> Lwt.return_error err
 
@@ -111,7 +111,7 @@ end
 
 let ( >>=? ) = Lwt_result.bind
 
-module Make_selfserver (Encoding : Resto.ENCODING) (Log : LOGGING) (Middleware : MIDDLEWARE) = struct
+module Make_selfserver (Encoding : Resto.ENCODING) (Log : LOGGING) = struct
   open Cohttp
   module Service = Resto.MakeService (Encoding)
   module Directory = Resto_directory.Make (Encoding)
@@ -328,8 +328,8 @@ module Make_selfserver (Encoding : Resto.ENCODING) (Log : LOGGING) (Middleware :
   end
 end
 
-module Make (Encoding : Resto.ENCODING) (Log : LOGGING) (Middleware : MIDDLEWARE) = struct
-  include Make_selfserver (Encoding) (Log) (Middleware)
+module Make (Encoding : Resto.ENCODING) (Log : LOGGING) = struct
+  include Make_selfserver (Encoding) (Log)
   open Cohttp
 
   type server = {
@@ -492,6 +492,7 @@ module Make (Encoding : Resto.ENCODING) (Log : LOGGING) (Middleware : MIDDLEWARE
 
   let launch ?(host = "::") ?(cors = Cors.default)
       ?(agent = Agent.default_agent) ?(acl = Acl.Allow_all {except = []})
+      ?(middleware = null_middleware)
       ~media_types mode root =
     let default_media_type = Media.default_media_type media_types in
     let stop, stopper = Lwt.wait () in
@@ -546,6 +547,7 @@ module Make (Encoding : Resto.ENCODING) (Log : LOGGING) (Middleware : MIDDLEWARE
                  in
                  lwt_return_response (Response.make ~status ~headers (), body))
        in
+       let module Middleware = (val middleware : MIDDLEWARE) in
        let modified_callback conn req body = Middleware.transform_callback ~callback ~conn ~req ~body in
        Cohttp_lwt_unix.Server.create
          ~stop
