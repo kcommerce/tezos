@@ -26,6 +26,7 @@
 open Configuration
 open Protocol.Alpha_context
 open Plugin
+open Common
 
 (**
 
@@ -39,6 +40,24 @@ let synchronization_failure e =
     Error_monad.(TzTrace.pp_print_top pp)
     e ;
   Lwt_exit.exit_and_raise 1
+
+type error += Cannot_find_block of Block_hash.t
+
+let () =
+  register_error_kind
+    ~id:"sc_rollup.node.cannot_find_block"
+    ~title:"Cannot find block from L1"
+    ~description:"A block couldn't be found from the L1 node"
+    ~pp:(fun ppf hash ->
+      Format.fprintf
+        ppf
+        "Block with hash %a was not found on the L1 node."
+        Block_hash.pp
+        hash)
+    `Temporary
+    Data_encoding.(obj1 (req "hash" Block_hash.encoding))
+    (function Cannot_find_block hash -> Some hash | _ -> None)
+    (fun hash -> Cannot_find_block hash)
 
 (**
 
@@ -105,7 +124,16 @@ module State = struct
   let store_block = Store.Blocks.add
 
   let block_of_hash = Store.Blocks.get
+
+  module Blocks_cache =
+    Ringo_lwt.Functors.Make_opt
+      ((val Ringo.(
+              map_maker ~replacement:LRU ~overflow:Strong ~accounting:Precise))
+         (Block_hash))
 end
+
+type blocks_cache =
+  Protocol_client_context.Alpha_block_services.block_info State.Blocks_cache.t
 
 (**
 
@@ -123,6 +151,12 @@ let same_branch new_head intermediate_heads =
 
 let rollback new_head = Rollback {new_head}
 
+type t = {
+  blocks_cache : blocks_cache;
+  events : chain_event Lwt_stream.t;
+  node_ctxt : Node_context.t;
+}
+
 (**
 
    Helpers
@@ -133,6 +167,11 @@ let rollback new_head = Rollback {new_head}
 let genesis_hash =
   Block_hash.of_b58check_exn
     "BLockGenesisGenesisGenesisGenesisGenesisf79b5d1CoW2"
+
+let chain_event_head_hash = function
+  | SameBranch {new_head = Head {hash; _}; _}
+  | Rollback {new_head = Head {hash; _}} ->
+      hash
 
 (** [blocks_of_heads base heads] given a list of successive heads
    connected to [base], returns an associative list mapping block hash
@@ -323,15 +362,18 @@ let discard_pre_origination_blocks info chain_events =
   in
   Lwt_stream.filter_map at_or_after_origination chain_events
 
-let start configuration (cctxt : Protocol_client_context.full) store =
+let start configuration (node_ctxt : Node_context.t) store =
   let open Lwt_result_syntax in
   let*! () = Layer1_event.starting () in
   let* () =
-    check_sc_rollup_address_exists configuration.sc_rollup_address cctxt
+    check_sc_rollup_address_exists
+      configuration.sc_rollup_address
+      node_ctxt.cctxt
   in
-  let* event_stream = chain_events cctxt store `Main in
-  let* info = gather_info cctxt configuration.sc_rollup_address in
-  return (discard_pre_origination_blocks info event_stream)
+  let* event_stream = chain_events node_ctxt.cctxt store `Main in
+  let+ info = gather_info node_ctxt.cctxt configuration.sc_rollup_address in
+  let events = discard_pre_origination_blocks info event_stream in
+  {node_ctxt; events; blocks_cache = State.Blocks_cache.create 32}
 
 let current_head_hash store =
   let open Lwt_syntax in
@@ -355,3 +397,33 @@ let processed = function
   | SameBranch {new_head; intermediate_heads} ->
       List.iter_s processed_head (intermediate_heads @ [new_head])
   | Rollback {new_head} -> processed_head new_head
+
+(** [fetch_tezos_block l1_ctxt hash] returns a block info given a block
+    hash. Looks for the block in the blocks cache first, and fetches it from the
+    L1 node otherwise. *)
+let fetch_tezos_block l1_ctxt hash =
+  let open Lwt_result_syntax in
+  let find_in_cache hash fetch =
+    let fetch hash =
+      let*! block = fetch hash in
+      Lwt.return @@ Result.to_option block
+    in
+    let*! block =
+      State.Blocks_cache.find_or_replace l1_ctxt.blocks_cache hash fetch
+    in
+    match block with Some b -> return b | _ -> tzfail (Cannot_find_block hash)
+  in
+  fetch_tezos_block ~find_in_cache l1_ctxt.node_ctxt.cctxt hash
+
+(** Returns the reorganization of L1 blocks (if any) for [new_head]. *)
+let get_tezos_reorg_for_new_head l1_state store new_head_hash =
+  let open Lwt_result_syntax in
+  let*! old_head_hash = current_head_hash store in
+  match old_head_hash with
+  | None ->
+      (* No known tezos head, consider the new head as being on top of a previous
+         tezos block. *)
+      let+ new_head = fetch_tezos_block l1_state new_head_hash in
+      {old_chain = []; new_chain = [new_head]}
+  | Some old_head_hash ->
+      tezos_reorg (fetch_tezos_block l1_state) ~old_head_hash ~new_head_hash

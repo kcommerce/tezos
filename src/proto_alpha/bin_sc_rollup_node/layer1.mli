@@ -46,15 +46,22 @@ type chain_event =
       (** A chain reorganization occurred since the previous
           synchronization. The rollback set [new_head] to an old block. *)
 
-(** [start configuration cctxt store] returns a stream of [chain_event]
-   obtained from the monitoring of the Tezos node set up by the client
-   [cctxt]. The layer 1 state is stored in the data directory declared
-   in [configuration]. *)
-val start :
-  Configuration.t ->
-  Protocol_client_context.full ->
-  Store.t ->
-  chain_event Lwt_stream.t tzresult Lwt.t
+(** Type of cache holding the last 32 blocks, with their operations. *)
+type blocks_cache
+
+type t = private {
+  blocks_cache : blocks_cache;
+  events : chain_event Lwt_stream.t;
+  node_ctxt : Node_context.t;
+}
+
+val chain_event_head_hash : chain_event -> Block_hash.t
+
+(** [start configuration node_ctxt store] returns a stream of [chain_event]
+    obtained from the monitoring of the Tezos node set up by the client
+    [node_ctxt.cctxt]. The layer 1 state is stored in the data directory
+    declared in [configuration]. *)
+val start : Configuration.t -> Node_context.t -> Store.t -> t tzresult Lwt.t
 
 (** [current_head_hash store] is the current hash of the head of the
    Tezos chain as far as the smart-contract rollup node knows from the
@@ -77,3 +84,20 @@ val genesis_hash : Block_hash.t
 (** [processed chain_event] emits a log event to officialize the
     processing of some layer 1 [chain_event]. *)
 val processed : chain_event -> unit Lwt.t
+
+(** [fetch_tezos_block l1_ctxt hash] returns a block info given a block hash.
+    Looks for the block in the blocks cache first, and fetches it from the L1
+    node otherwise. *)
+val fetch_tezos_block :
+  t ->
+  Block_hash.t ->
+  Protocol_client_context.Alpha_block_services.block_info tzresult Lwt.t
+
+(** [get_tezos_reorg_for_new_head l1_ctxt store hash] returns the reorganization
+    of L1 blocks (if any) for [new_head]. *)
+val get_tezos_reorg_for_new_head :
+  t ->
+  Store.t ->
+  Block_hash.t ->
+  Protocol_client_context.Alpha_block_services.block_info Common.reorg tzresult
+  Lwt.t

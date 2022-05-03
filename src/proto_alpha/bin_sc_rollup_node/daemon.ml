@@ -181,9 +181,8 @@ module Make (PVM : Pvm.S) = struct
     in
     go []
 
-  let daemonize node_ctxt store layer_1_chain_events =
-    Lwt.no_cancel
-    @@ iter_stream layer_1_chain_events
+  let daemonize node_ctxt store (l1_ctxt : Layer1.t) =
+    Lwt.no_cancel @@ iter_stream l1_ctxt.events
     @@ on_layer_1_chain_event node_ctxt store
 
   let install_finalizer store rpc_server =
@@ -200,9 +199,7 @@ module Make (PVM : Pvm.S) = struct
       let* rpc_server =
         Components.RPC_server.start node_ctxt store configuration
       in
-      let* tezos_heads =
-        Layer1.start configuration node_ctxt.Node_context.cctxt store
-      in
+      let* l1_ctxt = Layer1.start configuration node_ctxt store in
       let*! () = Inbox.start () in
       let*! () = Components.Commitment.start () in
 
@@ -212,7 +209,7 @@ module Make (PVM : Pvm.S) = struct
           ~rpc_addr:configuration.rpc_addr
           ~rpc_port:configuration.rpc_port
       in
-      daemonize node_ctxt store tezos_heads
+      daemonize node_ctxt store l1_ctxt
     in
     start ()
 end
