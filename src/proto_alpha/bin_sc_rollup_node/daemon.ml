@@ -88,7 +88,18 @@ module Make (PVM : Pvm.S) = struct
     (* Publishing a commitment when one is available does not depend on the state of
        the current head, but we still need to ensure that the node only published
        one commitment per block. *)
-    Components.Commitment.publish_commitment node_ctxt store
+    let* () = Components.Commitment.publish_commitment node_ctxt store in
+    let*! () = Injector.inject () in
+    return_unit
+
+  let notify_injector l1_ctxt store chain_event =
+    let open Lwt_result_syntax in
+    let open Layer1 in
+    let hash = chain_event_head_hash chain_event in
+    let* head = fetch_tezos_block l1_ctxt hash in
+    let* reorg = get_tezos_reorg_for_new_head l1_ctxt store hash in
+    let*! () = Injector.new_tezos_head head reorg in
+    return_unit
 
   (* [on_layer_1_chain_event node_ctxt store chain_event old_heads] processes a
      list of heads, coming from either a list of [old_heads] or from the current
@@ -104,7 +115,7 @@ module Make (PVM : Pvm.S) = struct
      needs to be returned to be included as the rollup node started tracking a
      new branch.
   *)
-  let on_layer_1_chain_event node_ctxt store chain_event old_heads =
+  let on_layer_1_chain_event l1_ctxt node_ctxt store chain_event old_heads =
     let open Lwt_result_syntax in
     let open Layer1 in
     let* () =
@@ -115,6 +126,7 @@ module Make (PVM : Pvm.S) = struct
         node_ctxt
         store
     in
+    let* () = notify_injector l1_ctxt store chain_event in
     let* non_final_heads =
       match chain_event with
       | SameBranch {new_head; intermediate_heads} ->
@@ -183,7 +195,7 @@ module Make (PVM : Pvm.S) = struct
 
   let daemonize node_ctxt store (l1_ctxt : Layer1.t) =
     Lwt.no_cancel @@ iter_stream l1_ctxt.events
-    @@ on_layer_1_chain_event node_ctxt store
+    @@ on_layer_1_chain_event l1_ctxt node_ctxt store
 
   let install_finalizer store rpc_server =
     let open Lwt_syntax in
@@ -202,6 +214,12 @@ module Make (PVM : Pvm.S) = struct
       let* l1_ctxt = Layer1.start configuration node_ctxt store in
       let*! () = Inbox.start () in
       let*! () = Components.Commitment.start () in
+      let* () =
+        Injector.init
+          node_ctxt.cctxt
+          node_ctxt
+          ~signers:[(node_ctxt.operator, `Each_block, [Injector.Publish])]
+      in
 
       let _ = install_finalizer store rpc_server in
       let*! () =

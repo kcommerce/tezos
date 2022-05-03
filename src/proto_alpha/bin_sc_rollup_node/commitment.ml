@@ -23,19 +23,19 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-(** The rollup node stores and publishes commitments for the PVM 
+(** The rollup node stores and publishes commitments for the PVM
     every 20 levels.
 
-    Every time a finalized block is processed  by the rollup node, 
-    the latter determines whether the last commitment that the node 
-    has produced referred to 20 blocks earlier. In this case, it 
-    computes and stores a new commitment in a level-indexed map. 
+    Every time a finalized block is processed  by the rollup node,
+    the latter determines whether the last commitment that the node
+    has produced referred to 20 blocks earlier. In this case, it
+    computes and stores a new commitment in a level-indexed map.
 
-    Stored commitments are signed by the rollup node operator 
-    and published on the layer1 chain. To ensure that commitments 
-    produced by the rollup node are eventually published, 
-    storing and publishing commitments are decoupled. Every time 
-    a new head is processed, the node tries to publish the oldest 
+    Stored commitments are signed by the rollup node operator
+    and published on the layer1 chain. To ensure that commitments
+    produced by the rollup node are eventually published,
+    storing and publishing commitments are decoupled. Every time
+    a new head is processed, the node tries to publish the oldest
     commitment that was not published already.
 *)
 
@@ -149,8 +149,8 @@ module type S = sig
   val process_head :
     Node_context.t -> Store.t -> Layer1.head -> unit tzresult Lwt.t
 
-  (** [get_last_cemented_commitment_hash_with_level node_ctxt store] 
-      fetches and stores information about the last cemented commitment 
+  (** [get_last_cemented_commitment_hash_with_level node_ctxt store]
+      fetches and stores information about the last cemented commitment
       in the layer1 chain.
     *)
   val get_last_cemented_commitment_hash_with_level :
@@ -162,7 +162,7 @@ module type S = sig
       the layer1 chain. In this case, the rollup node checks whether it has
       computed a commitment whose inbox level is
       [sc_rollup_commitment_frequency] levels after the inbox level of the last
-      cemented commitment: 
+      cemented commitment:
       {ul
       {li if the commitment is found and its predecessor hash coincides with
        the hash of the LCC, the rollup node will try to publish that commitment
@@ -282,8 +282,7 @@ module Make (PVM : Pvm.S) : S with module PVM = PVM = struct
     in
     return_unit
 
-  let get_commitment_and_publish ~check_lcc_hash
-      ({cctxt; rollup_address; _} as node_ctxt : Node_context.t)
+  let get_commitment_and_publish ~check_lcc_hash (node_ctxt : Node_context.t)
       next_level_to_publish store =
     let open Lwt_result_syntax in
     let*! is_commitment_available =
@@ -307,37 +306,16 @@ module Make (PVM : Pvm.S) : S with module PVM = PVM = struct
             exit 1
         else Lwt.return ()
       in
-      let* source, src_pk, src_sk = Node_context.get_operator_keys node_ctxt in
-      let* _, _, Manager_operation_result {operation_result; _} =
-        Client_proto_context.sc_rollup_publish
-          cctxt
-          ~chain:cctxt#chain
-          ~block:cctxt#block
-          ~commitment
-          ~source
-          ~rollup:rollup_address
-          ~src_pk
-          ~src_sk
-          ~fee_parameter:Configuration.default_fee_parameter
-          ()
+      let publish_operation =
+        Sc_rollup_publish {rollup = node_ctxt.rollup_address; commitment}
       in
-      let open Apply_results in
+      let* () =
+        Injector.add_pending_operation
+          ~source:node_ctxt.operator
+          publish_operation
+      in
       let*! () =
-        match operation_result with
-        | Applied (Sc_rollup_publish_result _) ->
-            let open Lwt_syntax in
-            let* () =
-              Store.Last_published_commitment_level.set
-                store
-                commitment.inbox_level
-            in
-            Commitment_event.commitment_published commitment
-        | Failed (Sc_rollup_publish_manager_kind, _errors) ->
-            Commitment_event.commitment_failed commitment
-        | Backtracked (Sc_rollup_publish_result _, _errors) ->
-            Commitment_event.commitment_backtracked commitment
-        | Skipped Sc_rollup_publish_manager_kind ->
-            Commitment_event.commitment_skipped commitment
+        Store.Last_published_commitment_level.set store commitment.inbox_level
       in
       return_unit
     else return_unit
