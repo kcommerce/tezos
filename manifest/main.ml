@@ -238,24 +238,6 @@ let re = external_lib ~js_compatible:true "re" V.(at_least "1.7.2")
 
 let re_str = external_sublib ~js_compatible:true re "re.str"
 
-let resto_version = V.(at_least "0.6" && less_than "0.7")
-
-let resto = external_lib ~js_compatible:true "resto" resto_version
-
-let resto_acl = external_lib "resto-acl" resto_version
-
-let resto_cohttp = external_lib "resto-cohttp" resto_version
-
-let resto_cohttp_client = external_lib "resto-cohttp-client" resto_version
-
-let resto_cohttp_self_serving_client =
-  external_lib "resto-cohttp-self-serving-client" resto_version
-
-let resto_cohttp_server = external_lib "resto-cohttp-server" resto_version
-
-let resto_directory =
-  external_lib ~js_compatible:true "resto-directory" resto_version
-
 let ringo = external_lib ~js_compatible:true "ringo" V.(exactly "0.8")
 
 let ringo_lwt = external_lib "ringo-lwt" V.(exactly "0.8")
@@ -303,6 +285,21 @@ let flextesa = vendored_lib "flextesa"
 let ledgerwallet_tezos = vendored_lib "ledgerwallet-tezos"
 
 let pyml_plot = vendored_lib "pyml-plot"
+
+let resto = vendored_lib ~js_compatible:true "resto"
+
+let resto_acl = vendored_lib "resto-acl"
+
+let resto_cohttp = vendored_lib "resto-cohttp"
+
+let resto_cohttp_client = vendored_lib "resto-cohttp-client"
+
+let resto_cohttp_self_serving_client = vendored_lib "resto-cohttp-self-serving-client"
+
+let resto_cohttp_server = vendored_lib "resto-cohttp-server"
+
+let resto_directory = vendored_lib ~js_compatible:true "resto-directory"
+
 
 (* INTERNAL LIBS *)
 
