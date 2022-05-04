@@ -1,0 +1,21 @@
+{ parameter int;
+  storage int;
+  code { CAR ;
+         LAMBDA_REC  int int
+                     { UNPAIR;
+                       DUP 2;
+                       EQ;
+                       IF { PUSH int 1;
+                            DIP { DROP 2 }}
+                          { DUP 2;
+                            DUP 2;
+                            PUSH int 1;
+                            DUP 3;
+                            SUB;
+                            EXEC;
+                            MUL;
+                            DIP { DROP 2}}};
+         SWAP;
+         EXEC;
+         NIL operation;
+         PAIR}}

@@ -301,6 +301,19 @@ module Test_map_instr_on_options = struct
     assertions storage_before new_storage input
 end
 
+let test_contract path storage param expected () =
+  test_context () >>=? fun ctx ->
+  let contract = path in
+  let script = read_file contract in
+  let expected_storage = Expr.from_string expected in
+  Contract_helpers.run_script ctx script ~storage ~parameter:param ()
+  >>= function
+  | Ok (res, _) ->
+      if res.storage = expected_storage then return_unit
+      else Alcotest.fail "Unexpected result"
+  | Error trace ->
+      Alcotest.failf "Unexpected error: %a" Error_monad.pp_print_trace trace
+
 let tests =
   [
     Tztest.tztest "test bad contract error" `Quick test_bad_contract_parameter;
@@ -322,5 +335,13 @@ let tests =
           (option small_signed_int)
           small_signed_int)
       Test_map_instr_on_options.test_mapping;
+    Tztest.tztest
+      "test lambda_rec instruction"
+      `Quick
+      (test_contract "./contracts/rec_fact.tz" "0" "5" "120");
+    Tztest.tztest
+      "test lambda_rec instruction with apply"
+      `Quick
+      (test_contract "./contracts/rec_fact_apply.tz" "0" "5" "120");
   ]
   @ error_encoding_tests

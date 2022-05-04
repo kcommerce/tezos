@@ -730,6 +730,21 @@ let test_forbidden_op_in_view op () =
         op
   | Error _ -> return_unit
 
+let test_contract path () =
+  let contract = path in
+  let script = read_file contract in
+  let contract_expr = Expr.from_string script in
+  test_context () >>=? fun ctxt ->
+  Script_ir_translator.typecheck_code
+    ~legacy:false
+    ~show_types:false
+    ctxt
+    contract_expr
+  >>= function
+  | Ok _ -> return_unit
+  | Error t ->
+      Alcotest.failf "Unexpected error: %a" Environment.Error_monad.pp_trace t
+
 let tests =
   [
     Tztest.tztest "test unparse view" `Quick test_unparse_view;
@@ -767,4 +782,12 @@ let tests =
       "test forbidden CREATE_CONTRACT in view"
       `Quick
       (test_forbidden_op_in_view "CREATE_CONTRACT");
+    Tztest.tztest
+      "test lambda_rec instruction"
+      `Quick
+      (test_contract "./contracts/rec_fact.tz");
+    Tztest.tztest
+      "test lambda_rec instruction with apply"
+      `Quick
+      (test_contract "./contracts/rec_fact_apply.tz");
   ]
