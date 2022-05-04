@@ -343,11 +343,14 @@ let send_message client sc_rollup_address msg =
   in
   Client.bake_for_and_wait client
 
-let send_messages n sc_rollup_address client =
+let send_messages ?batch_size n sc_rollup_address client =
   let messages =
     List.map
       (fun i ->
-        let json = `A (List.map (fun _ -> `String "CAFEBABE") (range 1 i)) in
+        let batch_size = match batch_size with None -> i | Some v -> v in
+        let json =
+          `A (List.map (fun _ -> `String "CAFEBABE") (range 1 batch_size))
+        in
         "text:" ^ Ezjsonm.to_string json)
       (range 1 n)
   in
@@ -631,6 +634,28 @@ let basic_scenario _protocol sc_rollup_node sc_rollup_address _node client =
   let* () = send_messages num_messages sc_rollup_address client in
   let* _ = Sc_rollup_node.wait_for_level sc_rollup_node expected_level in
   return ()
+
+let too_many_messages _protocol sc_rollup_node sc_rollup_address _node client =
+  (* TODO: https://gitlab.com/tezos/tezos/-/issues/2932
+     The following should be equal to the period of commitment publications. *)
+  let num_messages = 30 in
+  let expected_level =
+    (* We start at level 2 and each message also bakes a block. With
+       30 batches of messages being sent, we must end up at level
+       32. *)
+    32
+  in
+  let* () = Sc_rollup_node.run sc_rollup_node in
+  Lwt.catch
+    (fun () ->
+      let* () =
+        send_messages ~batch_size:500 num_messages sc_rollup_address client
+      in
+      let* _ =
+        Sc_rollup_node.wait_for_level ~timeout:3. sc_rollup_node expected_level
+      in
+      failwith "Add too many messages in the inbox should fail.")
+    (fun _exn -> return ())
 
 let sc_rollup_node_stops_scenario _protocol sc_rollup_node sc_rollup_address
     _node client =
@@ -1399,6 +1424,10 @@ let register ~protocols =
   test_rollup_inbox_size protocols ;
   test_rollup_inbox_current_messages_hash protocols ;
   test_rollup_inbox_of_rollup_node "basic" basic_scenario protocols ;
+  test_rollup_inbox_of_rollup_node
+    "too_many_messages"
+    too_many_messages
+    protocols ;
   test_rollup_inbox_of_rollup_node
     "stops"
     sc_rollup_node_stops_scenario
