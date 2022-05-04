@@ -707,6 +707,16 @@ Stack operations
 
     > LAMBDA _ _ code / S  =>  code : S
 
+-  ``LAMBDA_REC 'a 'b code``: Push a lambda with itself on top the
+   code, recursively, with the given parameter type `'a` and return type `'b`
+   onto the stack.
+
+::
+
+    :: 'A ->  (lambda 'a 'b) : 'A
+
+    > LAMBDA_REC _ _ code / S  =>  code : S
+
 Generic comparison
 ~~~~~~~~~~~~~~~~~~
 
@@ -2929,6 +2939,7 @@ The instructions which accept at most one variable annotation are:
    UPDATE
    GET
    LAMBDA
+   LAMBDA_REC
    EXEC
    ADD
    SUB
@@ -3686,6 +3697,7 @@ Full grammar
       | LOOP { <instruction> ... }
       | LOOP_LEFT { <instruction> ... }
       | LAMBDA <type> <type> { <instruction> ... }
+      | LAMBDA_REC <type> <type> { <instruction> ... }
       | EXEC
       | APPLY
       | DIP { <instruction> ... }

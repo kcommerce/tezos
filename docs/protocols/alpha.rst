@@ -39,6 +39,8 @@ Bug Fixes
 Minor Changes
 -------------
 
+- Add a new LAMBDA_REC instruction to push fix-points of LAMBDA values.
+
 Internal
 --------
 
