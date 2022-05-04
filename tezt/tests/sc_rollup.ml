@@ -101,8 +101,8 @@ let with_fresh_rollup f tezos_node tezos_client bootstrap1_key =
   let* () = Client.bake_for tezos_client in
   f rollup_address sc_rollup_node configuration_filename
 
-(* TODO: create and insert issue number. Many tests
-can be refactored using test_scenario.*)
+(* TODO: https://gitlab.com/tezos/tezos/-/issues/2933
+   Many tests can be refactored using test_scenario. *)
 let test_scenario {output_file_prefix; variant; tags; description} scenario =
   let output_file _ = output_file_prefix ^ "_" ^ variant in
   let tags = tags @ [variant] in
