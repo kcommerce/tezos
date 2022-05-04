@@ -850,6 +850,16 @@ and ('before_top, 'before, 'result_top, 'result) kinstr =
       * ('b, 'c) lambda
       * (('b, 'c) lambda, 'a * 's, 'r, 'f) kinstr
       -> ('a, 's, 'r, 'f) kinstr
+  | ILambdaRec : {
+      kinfo : ('a, 's) kinfo;
+      arg_ty_expr :
+        (Script.location, Michelson_v1_primitives.prim) Micheline.node;
+      ret_ty_expr :
+        (Script.location, Michelson_v1_primitives.prim) Micheline.node;
+      code : (('arg, 'ret) lambda * 'arg, 'ret) lambda;
+      k : (('arg, 'ret) lambda, 'a * 's, 'r, 'f) kinstr;
+    }
+      -> ('a, 's, 'r, 'f) kinstr
   | IFailwith :
       ('a, 's) kinfo * Script.location * ('a, _) ty
       -> ('a, 's, 'r, 'f) kinstr
@@ -1511,6 +1521,7 @@ let kinfo_of_kinstr : type a s b f. (a, s, b, f) kinstr -> (a, s) kinfo =
   | IExec (kinfo, _) -> kinfo
   | IApply (kinfo, _, _) -> kinfo
   | ILambda (kinfo, _, _) -> kinfo
+  | ILambdaRec {kinfo; _} -> kinfo
   | IFailwith (kinfo, _, _) -> kinfo
   | ICompare (kinfo, _, _) -> kinfo
   | IEq (kinfo, _) -> kinfo
@@ -1713,6 +1724,8 @@ let kinstr_rewritek :
   | IExec (kinfo, k) -> IExec (kinfo, f.apply k)
   | IApply (kinfo, ty, k) -> IApply (kinfo, ty, f.apply k)
   | ILambda (kinfo, l, k) -> ILambda (kinfo, l, f.apply k)
+  | ILambdaRec {kinfo; arg_ty_expr; ret_ty_expr; code; k} ->
+      ILambdaRec {kinfo; arg_ty_expr; ret_ty_expr; code; k = f.apply k}
   | IFailwith (kinfo, i, ty) -> IFailwith (kinfo, i, ty)
   | ICompare (kinfo, ty, k) -> ICompare (kinfo, ty, f.apply k)
   | IEq (kinfo, k) -> IEq (kinfo, f.apply k)
@@ -2117,6 +2130,7 @@ let kinstr_traverse i init f =
     | IExec (_, k) -> (next [@ocaml.tailcall]) k
     | IApply (_, _, k) -> (next [@ocaml.tailcall]) k
     | ILambda (_, _, k) -> (next [@ocaml.tailcall]) k
+    | ILambdaRec {k; _} -> (next [@ocaml.tailcall]) k
     | IFailwith (_, _, _) -> (return [@ocaml.tailcall]) ()
     | ICompare (_, _, k) -> (next [@ocaml.tailcall]) k
     | IEq (_, k) -> (next [@ocaml.tailcall]) k

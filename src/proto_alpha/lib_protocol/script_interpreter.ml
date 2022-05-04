@@ -930,6 +930,10 @@ and step : type a s b t r f. (a, s, b, t, r, f) step_type =
           (step [@ocaml.tailcall]) (ctxt, sc) gas k ks lam' stack
       | ILambda (_, lam, k) ->
           (step [@ocaml.tailcall]) g gas k ks lam (accu, stack)
+      | ILambdaRec {arg_ty_expr; ret_ty_expr; code; k; _} ->
+          lambda_rec ctxt gas arg_ty_expr ret_ty_expr code
+          >>=? fun (lam', ctxt, gas) ->
+          (step [@ocaml.tailcall]) (ctxt, sc) gas k ks lam' (accu, stack)
       | IFailwith (_, kloc, tv) ->
           let {ifailwith} = ifailwith in
           ifailwith None g gas kloc tv accu

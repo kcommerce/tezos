@@ -803,6 +803,16 @@ and ('before_top, 'before, 'result_top, 'result) kinstr =
       * ('b, 'c) lambda
       * (('b, 'c) lambda, 'a * 's, 'r, 'f) kinstr
       -> ('a, 's, 'r, 'f) kinstr
+  | ILambdaRec : {
+      kinfo : ('a, 's) kinfo;
+      arg_ty_expr :
+        (Script.location, Michelson_v1_primitives.prim) Micheline.node;
+      ret_ty_expr :
+        (Script.location, Michelson_v1_primitives.prim) Micheline.node;
+      code : (('arg, 'ret) lambda * 'arg, 'ret) lambda;
+      k : (('arg, 'ret) lambda, 'a * 's, 'r, 'f) kinstr;
+    }
+      -> ('a, 's, 'r, 'f) kinstr
   | IFailwith :
       ('a, 's) kinfo * Script.location * ('a, _) ty
       -> ('a, 's, 'r, 'f) kinstr

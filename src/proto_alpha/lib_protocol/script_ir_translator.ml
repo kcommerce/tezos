@@ -3752,6 +3752,37 @@ and[@coq_axiom_with_reason "gadt"] parse_instr :
       lambda_t loc arg ret >>?= fun ty ->
       let stack = Item_t (ty, stack) in
       typed ctxt loc instr stack
+  | ( Prim (loc, I_LAMBDA_REC, [arg_ty_expr; ret_ty_expr; lambda_expr], annot),
+      stack ) -> (
+      parse_any_ty ctxt ~stack_depth:(stack_depth + 1) ~legacy arg_ty_expr
+      >>?= fun (Ex_ty arg, ctxt) ->
+      parse_any_ty ctxt ~stack_depth:(stack_depth + 1) ~legacy ret_ty_expr
+      >>?= fun (Ex_ty ret, ctxt) ->
+      check_kind [Seq_kind] lambda_expr >>?= fun () ->
+      check_var_annot loc annot >>?= fun () ->
+      lambda_t loc arg ret >>?= fun lambda_ty ->
+      pair_t loc lambda_ty arg >>?= function
+      | Ty_ex_c functional_ty ->
+          parse_returning
+            (Tc_context.add_lambda tc_context)
+            ?type_logger
+            ~stack_depth:(stack_depth + 1)
+            ctxt
+            ~legacy
+            functional_ty
+            ret
+            lambda_expr
+          >>=? fun (code, ctxt) ->
+          let instr =
+            {
+              apply =
+                (fun kinfo k ->
+                  ILambdaRec {kinfo; arg_ty_expr; ret_ty_expr; code; k});
+            }
+          in
+          lambda_t loc arg ret >>?= fun lambda_ty ->
+          let stack = Item_t (lambda_ty, stack) in
+          typed ctxt loc instr stack)
   | ( Prim (loc, I_EXEC, [], annot),
       Item_t (arg, Item_t (Lambda_t (param, ret, _), rest)) ) ->
       check_item_ty ctxt arg param loc I_EXEC 1 2 >>?= fun (Eq, ctxt) ->

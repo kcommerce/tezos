@@ -292,6 +292,7 @@ let cost_of_instr : type a s r f. (a, s, r, f) kinstr -> a -> s -> Gas.cost =
   | IExec _ -> Interp_costs.exec
   | IApply _ -> Interp_costs.apply
   | ILambda _ -> Interp_costs.lambda
+  | ILambdaRec _ -> Interp_costs.lambda
   | IFailwith _ -> Gas.free
   | IEq _ -> Interp_costs.eq
   | INeq _ -> Interp_costs.neq
@@ -509,6 +510,52 @@ let apply ctxt gas capture_ty capture lam =
           ( loc,
             [
               Prim (loc, I_PUSH, [ty_expr; const_expr], []);
+              Prim (loc, I_PAIR, [], []);
+              expr;
+            ] )
+      in
+      let lam' = Lam (full_descr, full_expr) in
+      let (gas, ctxt) = local_gas_counter_and_outdated_context ctxt in
+      return (lam', ctxt, gas)
+
+(* [lambda_rec ctxt gas arg_ty_expr ret_ty_expr lam] builds the
+   fixpoint of [lam] by fixing its first formal argument to
+   itself. The type of [lam] is represented by [lambda arg_ty_expr
+   ret_ty_expr]. *)
+let lambda_rec ctxt gas arg_ty_expr ret_ty_expr lam =
+  let (Lam (descr, expr)) = lam in
+  let (Item_t (full_arg_ty, _)) = descr.kbef in
+  let ctxt = update_context gas ctxt in
+  let loc = Micheline.location expr in
+  match full_arg_ty with
+  | Pair_t ((Lambda_t (_, _, _) as lam_ty), arg_ty, _, _) ->
+      let arg_stack_ty = Item_t (arg_ty, Bot_t) in
+      let kinfo_lam = {iloc = descr.kloc; kstack_ty = Item_t (arg_ty, Bot_t)} in
+      let kinfo_pair =
+        {iloc = descr.kloc; kstack_ty = Item_t (lam_ty, Item_t (arg_ty, Bot_t))}
+      in
+      let rec rec_lam =
+        Lam ({descr with kbef = arg_stack_ty; kinstr = instr}, expr)
+      and instr =
+        ILambda (kinfo_lam, rec_lam, ICons_pair (kinfo_pair, descr.kinstr))
+      in
+
+      let full_descr =
+        {
+          kloc = descr.kloc;
+          kbef = arg_stack_ty;
+          kaft = descr.kaft;
+          kinstr = instr;
+        }
+      in
+      let lambda_ty_expr =
+        Micheline.Prim (loc, T_lambda, [arg_ty_expr; ret_ty_expr], [])
+      in
+      let full_expr =
+        Micheline.Seq
+          ( loc,
+            [
+              Prim (loc, I_PUSH, [lambda_ty_expr; expr], []);
               Prim (loc, I_PAIR, [], []);
               expr;
             ] )

@@ -443,6 +443,9 @@ and kinstr_size :
     | ILambda (kinfo, lambda, _) ->
         let accu = ret_succ_adding accu (base kinfo +! word_size) in
         (lambda_size [@ocaml.tailcall]) ~count_lambda_nodes accu lambda
+    | ILambdaRec {kinfo; code; _} ->
+        let accu = ret_succ_adding accu (base kinfo +! word_size) in
+        (lambda_size [@ocaml.tailcall]) ~count_lambda_nodes accu code
     | IFailwith (kinfo, _, ty) ->
         ret_succ_adding (accu ++ ty_size ty) (base kinfo +! word_size)
     | ICompare (kinfo, cty, _) ->
