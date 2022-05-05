@@ -60,6 +60,9 @@
    meant to ensure that Merkle proofs about the inbox contents have a
    bounded size. (See next section.)
 
+   An available message in the inbox can be committed or non committed
+   yet. The number of non committed messages is bounded by
+
    {1 Merkelization of the inbox}
 
    As for the state of the {!Sc_rollup_PVM_sem}, the layer 1 does not

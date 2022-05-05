@@ -23,19 +23,19 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-(** The rollup node stores and publishes commitments for the PVM 
+(** The rollup node stores and publishes commitments for the PVM
     every 20 levels.
 
-    Every time a finalized block is processed  by the rollup node, 
-    the latter determines whether the last commitment that the node 
-    has produced referred to 20 blocks earlier. In this case, it 
-    computes and stores a new commitment in a level-indexed map. 
+    Every time a finalized block is processed  by the rollup node,
+    the latter determines whether the last commitment that the node
+    has produced referred to 20 blocks earlier. In this case, it
+    computes and stores a new commitment in a level-indexed map.
 
-    Stored commitments are signed by the rollup node operator 
-    and published on the layer1 chain. To ensure that commitments 
-    produced by the rollup node are eventually published, 
-    storing and publishing commitments are decoupled. Every time 
-    a new head is processed, the node tries to publish the oldest 
+    Stored commitments are signed by the rollup node operator
+    and published on the layer1 chain. To ensure that commitments
+    produced by the rollup node are eventually published,
+    storing and publishing commitments are decoupled. Every time
+    a new head is processed, the node tries to publish the oldest
     commitment that was not published already.
 *)
 
@@ -45,9 +45,9 @@ open Alpha_context
 module type Mutable_level_store =
   Store.Mutable_value with type value = Raw_level.t
 
-(* We keep the number of messages and ticks to be included in the 
-   next commitment in memory. Note that we do not risk to increase 
-   these counters when the wrong branch is tracked by the rollup 
+(* We keep the number of messages and ticks to be included in the
+   next commitment in memory. Note that we do not risk to increase
+   these counters when the wrong branch is tracked by the rollup
    node, as only finalized heads are processed to build commitments.
 *)
 
@@ -67,7 +67,7 @@ module Number_of_messages = Mutable_counter.Make ()
 
 module Number_of_ticks = Mutable_counter.Make ()
 
-let sc_rollup_commitment_frequency = Int32.of_int 20
+let sc_rollup_commitment_period = Int32.of_int 20
 
 let last_commitment (module Last_commitment_level : Mutable_level_store) store =
   let open Lwt_syntax in
@@ -98,7 +98,7 @@ let next_commitment_level (module Last_commitment_level : Mutable_level_store)
   Raw_level.of_int32
   @@ Int32.add
        (Raw_level.to_int32 last_commitment_level)
-       sc_rollup_commitment_frequency
+       sc_rollup_commitment_period
 
 let last_commitment_hash (module Last_commitment_level : Mutable_level_store)
     store =

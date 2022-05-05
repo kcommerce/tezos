@@ -36,8 +36,8 @@ module Sc_rollup_address_comparable = struct
   let compare_cost _rollup = Saturation_repr.safe_int 15
 end
 
-(* This will not create the map yet, as functions to consume gas have not 
-   been defined yet. However, it will make the type of the carbonated map 
+(* This will not create the map yet, as functions to consume gas have not
+   been defined yet. However, it will make the type of the carbonated map
    available to be used in the definition of type back.
 *)
 module Sc_rollup_address_map_builder =
@@ -540,8 +540,8 @@ let gas_consumed ~since ~until =
       Gas_limit_repr.Arith.sub before after
   | (_, _) -> Gas_limit_repr.Arith.zero
 
-(* Once gas consuming functions have been defined, 
-   we can instantiate the carbonated map. 
+(* Once gas consuming functions have been defined,
+   we can instantiate the carbonated map.
    See [Sc_rollup_carbonated_map_maker] above.
  *)
 
@@ -961,7 +961,7 @@ let prepare_first_block ~level ~timestamp ctxt =
             (* TODO: https://gitlab.com/tezos/tezos/-/issues/2756
                The following constants need to be refined. *)
             sc_rollup_stake_amount_in_mutez = 32_000_000;
-            sc_rollup_commitment_frequency_in_blocks = 20;
+            sc_rollup_commitment_period_in_blocks = 20;
             (* 76 for Commitments entry + 4 for Commitment_stake_count entry
                + 4 for Commitment_added entry
                + 0 for Staker_count_update entry *)
