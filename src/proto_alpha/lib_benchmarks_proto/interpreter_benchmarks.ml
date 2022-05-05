@@ -2041,6 +2041,41 @@ module Registration_section = struct
 
     let () =
       (*
+        ILambdaRec ->
+        IHalt
+       *)
+      let open Script_typed_ir in
+      let open Michelson_v1_primitives in
+      let lambda_ty = lambda unit unit in
+      let (Ty_ex_c code_ty) = pair lambda_ty unit in
+      let unit_ty_expr = Micheline.(Prim (dummy_location, T_unit, [], [])) in
+      let code =
+        let descr =
+          {
+            kloc = 0;
+            kbef = code_ty @$ bot;
+            kaft = unit @$ bot;
+            kinstr = ICdr (kinfo (code_ty @$ bot), halt_unit);
+          }
+        in
+        Lam (descr, Micheline.Int (0, Z.zero))
+      in
+      simple_benchmark_with_stack_sampler
+        ~name:Interpreter_workload.N_ILambdaRec
+        ~kinstr:
+          (ILambdaRec
+             {
+               kinfo = kinfo bot;
+               arg_ty_expr = unit_ty_expr;
+               ret_ty_expr = unit_ty_expr;
+               code;
+               k = halt (lambda unit unit @$ bot);
+             })
+        ~stack_sampler:(fun _cfg _rng_state () -> eos)
+        ()
+
+    let () =
+      (*
         ILambda ->
         IHalt
        *)

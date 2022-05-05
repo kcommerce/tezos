@@ -366,6 +366,9 @@ module Cost_of = struct
     (* model N_ILambda *)
     let cost_N_ILambda = S.safe_int 10
 
+    (* model N_ILambdaRec *)
+    let cost_N_ILambdaRec = S.safe_int 150
+
     (* model N_ILe *)
     let cost_N_ILe = S.safe_int 10
 
@@ -1270,6 +1273,8 @@ module Cost_of = struct
     let apply = atomic_step_cost cost_N_IApply
 
     let lambda = atomic_step_cost cost_N_ILambda
+
+    let lambda_rec = atomic_step_cost cost_N_ILambdaRec
 
     let address = atomic_step_cost cost_N_IAddress
 

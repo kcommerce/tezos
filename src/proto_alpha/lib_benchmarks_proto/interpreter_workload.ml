@@ -142,6 +142,7 @@ type instruction_name =
   | N_IExec
   | N_IApply
   | N_ILambda
+  | N_ILambdaRec
   | N_IFailwith
   (* comparison, warning: ad-hoc polymorphic instruction *)
   | N_ICompare
@@ -335,6 +336,7 @@ let string_of_instruction_name : instruction_name -> string =
   | N_IExec -> "N_IExec"
   | N_IApply -> "N_IApply"
   | N_ILambda -> "N_ILambda"
+  | N_ILambdaRec -> "N_ILambdaRec"
   | N_IFailwith -> "N_IFailwith"
   | N_ICompare -> "N_ICompare"
   | N_IEq -> "N_IEq"
@@ -554,6 +556,7 @@ let all_instructions =
     N_IDip;
     N_IExec;
     N_IApply;
+    N_ILambdaRec;
     N_ILambda;
     N_IFailwith;
     N_ICompare;
@@ -912,6 +915,8 @@ module Instructions = struct
   let exec = ir_sized_step N_IExec nullary
 
   let apply = ir_sized_step N_IApply nullary
+
+  let lambda_rec = ir_sized_step N_ILambdaRec nullary
 
   let lambda = ir_sized_step N_ILambda nullary
 
@@ -1309,6 +1314,7 @@ let extract_ir_sized_step :
   | (IExec (_, _), _) -> Instructions.exec
   | (IApply (_, _, _), _) -> Instructions.apply
   | (ILambda (_, _, _), _) -> Instructions.lambda
+  | (ILambdaRec _, _) -> Instructions.lambda_rec
   | (IFailwith (_, _, _), _) -> Instructions.failwith_
   | (ICompare (_, cmp_ty, _), (a, (b, _))) ->
       extract_compare_sized_step cmp_ty a b

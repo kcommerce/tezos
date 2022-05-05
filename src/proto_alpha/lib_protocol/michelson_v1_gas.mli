@@ -295,6 +295,8 @@ module Cost_of : sig
 
     val lambda : Gas.cost
 
+    val lambda_rec : Gas.cost
+
     val address : Gas.cost
 
     val contract : Gas.cost
