@@ -42,6 +42,8 @@ type error +=
       Sc_rollup_repr.Commitment_hash.t
   | (* `Temporary *) Sc_rollup_bad_inbox_level
   | (* `Temporary *) Sc_rollup_max_number_of_available_messages_reached
+  | (* `Temporary *)
+      Sc_rollup_max_number_of_available_messages_reached_for_commitment_period
 
 let () =
   register_error_kind
@@ -54,6 +56,21 @@ let () =
       | Sc_rollup_max_number_of_available_messages_reached -> Some ()
       | _ -> None)
     (fun () -> Sc_rollup_max_number_of_available_messages_reached) ;
+  register_error_kind
+    `Temporary
+    ~id:
+      "Sc_rollup_max_number_of_available_messages_reached_for_commitment_period"
+    ~title:"Maximum number of available messages reached for commitment period"
+    ~description:
+      "Maximum number of available messages reached for commitment period"
+    Data_encoding.unit
+    (function
+      | Sc_rollup_max_number_of_available_messages_reached_for_commitment_period
+        ->
+          Some ()
+      | _ -> None)
+    (fun () ->
+      Sc_rollup_max_number_of_available_messages_reached_for_commitment_period) ;
   let description = "Already staked." in
   register_error_kind
     `Temporary
@@ -286,9 +303,24 @@ let assert_inbox_size_ok ctxt inbox extra_num_messages =
     Compare.Z.(next_size <= Z.of_int max_size)
     Sc_rollup_max_number_of_available_messages_reached
 
+let assert_inbox_nb_messages_in_commitment_period inbox extra_messages =
+  let nb_messages_in_commitment_period =
+    Int64.add
+      (Sc_rollup_inbox_repr.number_of_messages_during_commitment_period inbox)
+      (Int64.of_int extra_messages)
+  in
+  let limit = Int64.of_int32 Sc_rollup_repr.Number_of_messages.max_int in
+  if Compare.Int64.(nb_messages_in_commitment_period > limit) then
+    fail
+      Sc_rollup_max_number_of_available_messages_reached_for_commitment_period
+  else return ()
+
 let add_messages ctxt rollup messages =
   let open Lwt_tzresult_syntax in
   let open Raw_context in
+  let commitment_period =
+    Constants_storage.sc_rollup_commitment_period_in_blocks ctxt
+  in
   let* (inbox, ctxt) = inbox ctxt rollup in
   let* (num_messages, total_messages_size, ctxt) =
     List.fold_left_es
@@ -309,6 +341,15 @@ let add_messages ctxt rollup messages =
       messages
   in
   let* () = assert_inbox_size_ok ctxt inbox num_messages in
+  let inbox =
+    if
+      Compare.Int.(
+        Sc_rollup_inbox_repr.levels_in_commitment_period inbox
+        = commitment_period)
+    then Sc_rollup_inbox_repr.start_new_commitment_period inbox
+    else inbox
+  in
+  let* () = assert_inbox_nb_messages_in_commitment_period inbox num_messages in
   let inbox_level = Sc_rollup_inbox_repr.inbox_level inbox in
   let* origination_level = Storage.Sc_rollup.Initial_level.get ctxt rollup in
   let levels =

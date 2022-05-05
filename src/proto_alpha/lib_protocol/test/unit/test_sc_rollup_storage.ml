@@ -1518,8 +1518,8 @@ let check_gas_consumed ~since ~until =
   let as_cost = Gas_limit_repr.cost_of_gas @@ gas_consumed ~since ~until in
   Saturation_repr.to_int as_cost
 
-(* Cost of compare key is currently free, which means that the lookup operation  
-   on a map of size 1 will consume 50 gas units (base cost), plus 2 for the 
+(* Cost of compare key is currently free, which means that the lookup operation
+   on a map of size 1 will consume 50 gas units (base cost), plus 2 for the
    traversal overhead, plus 15 for comparing the key, for a total of 67 gas units.
 *)
 let test_carbonated_memory_inbox_retrieval () =
@@ -1536,13 +1536,13 @@ let test_carbonated_memory_inbox_retrieval () =
   let consumed_gas = check_gas_consumed ~since:ctxt ~until:ctxt' in
   Assert.equal_int ~loc:__LOC__ consumed_gas 67
 
-(* A bit ugly, as we repeat the logic for setting messages 
-   defined in `Sc_rollup_storage`. However, this is necessary 
-   since we want to capture the context before and after performing 
+(* A bit ugly, as we repeat the logic for setting messages
+   defined in `Sc_rollup_storage`. However, this is necessary
+   since we want to capture the context before and after performing
    the `set_current_messages` operation on the in-memory map of messages.
 
-   Assuming that the cost of compare key is free, 
-   we expect set_messages to consume 67 gas units for finding the key, 
+   Assuming that the cost of compare key is free,
+   we expect set_messages to consume 67 gas units for finding the key,
    and 134 gas units for performing the update, for a total of 201 gas units.
 *)
 let test_carbonated_memory_inbox_set_messages () =
@@ -1576,6 +1576,35 @@ let test_carbonated_memory_inbox_set_messages () =
   in
   let consumed_gas = check_gas_consumed ~since:ctxt ~until:ctxt' in
   Assert.equal_int ~loc:__LOC__ consumed_gas 201
+
+let test_limit_on_number_of_messages_during_commitment_period () =
+  let* ctxt = new_context () in
+  let* (rollup, ctxt) = lift @@ new_sc_rollup ctxt in
+  let commitment_period =
+    Constants_storage.sc_rollup_commitment_period_in_blocks ctxt
+  in
+  let max_number = Int32.to_int Sc_rollup_repr.Number_of_messages.max_int in
+  let*? payload =
+    List.init
+      ~when_negative_length:[]
+      (1 + (max_number / (commitment_period - 1)))
+    @@ fun _ -> "a"
+  in
+  let*! add_too_many_messages =
+    List.fold_left_es
+      (fun ctxt _ ->
+        let* (_inbox, _size_diff, ctxt) =
+          lift @@ Sc_rollup_storage.add_messages ctxt rollup payload
+        in
+        return ctxt)
+      ctxt
+      (1 -- (commitment_period - 1))
+  in
+  Assert.proto_error ~loc:__LOC__ add_too_many_messages @@ function
+  | Sc_rollup_storage
+    .Sc_rollup_max_number_of_available_messages_reached_for_commitment_period ->
+      true
+  | _ -> false
 
 let tests =
   [
@@ -1767,6 +1796,10 @@ let tests =
       "Setting messages in in-memory message inbox consumes gas"
       `Quick
       test_carbonated_memory_inbox_set_messages;
+    Tztest.tztest
+      "The number of messages pushed during commitment period stays under limit"
+      `Quick
+      test_limit_on_number_of_messages_during_commitment_period;
   ]
 
 (* FIXME: https://gitlab.com/tezos/tezos/-/issues/2460

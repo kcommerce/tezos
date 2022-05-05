@@ -143,6 +143,19 @@ val inbox_level : t -> Raw_level_repr.t
     messages that can be consumed in [inbox]. *)
 val number_of_available_messages : t -> Z.t
 
+(** [number_of_messages_during_commitment_period inbox] returns the
+    number of messages added in the inbox since the beginning of
+    the current commitment period. *)
+val number_of_messages_during_commitment_period : t -> int64
+
+(** [start_new_commitment_period inbox] marks the beginning of a
+    new commitment period. *)
+val start_new_commitment_period : t -> t
+
+(** [levels_in_commitment_period inbox] returns the number of levels
+    since the beginning of a new commitment period. *)
+val levels_in_commitment_period : t -> int
+
 (** [consume_n_messages n inbox] returns an inbox where [n] messages have
     been consumed, or [None] if there are strictly less than [n] messages
     available in [inbox]. *)
