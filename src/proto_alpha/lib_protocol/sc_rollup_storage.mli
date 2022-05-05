@@ -142,11 +142,11 @@ type error +=
       Sc_rollup_bad_inbox_level
 
 (** Module [Internal] implements functions that are used only internally by
-    the [Sc_rollup_storage] module, but need to be exposed in tests or 
-    benchmarks. 
+    the [Sc_rollup_storage] module, but need to be exposed in tests or
+    benchmarks.
   *)
 module Internal : sig
-  (** [update_num_and_size_of_messages ~num_messages ~total_messages_size 
+  (** [update_num_and_size_of_messages ~num_messages ~total_messages_size
        message] returns the length and total messages size
       [messages]. *)
   val update_num_and_size_of_messages :
@@ -262,7 +262,7 @@ val withdraw_stake :
       {li [Sc_rollup_too_far_ahead] if [staker] would be more than
         [sc_rollup_max_future_commitments] ahead of the Last Cemented Commitment}
       {li [Sc_rollup_bad_inbox_level] if [commitment]'s predecessor is
-        less than [sc_rollup_commitment_frequency] blocks ahead}
+        less than [sc_rollup_commitment_period] blocks ahead}
       {li [Sc_rollup_not_staked] if [staker] is not staked}
       {li [Sc_rollup_staker_backtracked] if [staker] is not staked on an ancestor of [commitment]}
       {li [Sc_rollup_unknown_commitment] if the parent of the given commitment does not exist}
@@ -290,7 +290,7 @@ val refine_stake :
       {li [Sc_rollup_too_far_ahead] if [staker] would be more than
         [sc_rollup_max_future_commitments] ahead of the Last Cemented Commitment}
       {li [Sc_rollup_bad_inbox_level] if [commitment]'s predecessor is
-        less than [sc_rollup_commitment_frequency] blocks ahead}
+        less than [sc_rollup_commitment_period] blocks ahead}
       {li [Sc_rollup_staker_backtracked] if [staker] is not staked on an ancestor
         of [commitment]}
       {li [Sc_rollup_unknown_commitment] if the parent of the given commitment
