@@ -34,12 +34,16 @@ type t = {
   block_finality_time : int;
   kind : Sc_rollup.Kind.t;
   fee_parameter : Injection.fee_parameter;
+  protocol_constants : Constants.t;
 }
 
 let get_operator_keys node_ctxt =
   let open Lwt_result_syntax in
   let+ (_, pk, sk) = Client_keys.get_key node_ctxt.cctxt node_ctxt.operator in
   (node_ctxt.operator, pk, sk)
+
+let retrieve_constants cctxt =
+  Protocol.Constants_services.all cctxt (cctxt#chain, cctxt#block)
 
 let init (cctxt : Protocol_client_context.full) rollup_address operator
     fee_parameter =
@@ -53,6 +57,7 @@ let init (cctxt : Protocol_client_context.full) rollup_address operator
   let* kind =
     Plugin.RPC.Sc_rollup.kind cctxt (cctxt#chain, cctxt#block) rollup_address ()
   in
+  let* protocol_constants = retrieve_constants cctxt in
   let+ kind =
     match kind with
     | Some k -> return k
@@ -72,4 +77,5 @@ let init (cctxt : Protocol_client_context.full) rollup_address operator
     kind;
     block_finality_time = 2;
     fee_parameter;
+    protocol_constants;
   }
