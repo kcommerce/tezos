@@ -2,6 +2,7 @@
 (*                                                                           *)
 (* Open Source License                                                       *)
 (* Copyright (c) 2022 TriliTech <contact@trili.tech>                         *)
+(* Copyright (c) 2022 Nomadic Labs, <contact@nomadic-labs.com>               *)
 (*                                                                           *)
 (* Permission is hereby granted, free of charge, to any person obtaining a   *)
 (* copy of this software and associated documentation files (the "Software"),*)
@@ -23,21 +24,22 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-(** The rollup node stores and publishes commitments for the PVM
-    every 20 levels.
+(** The rollup node stores and publishes commitments for the PVM every
+   [Constants.sc_rollup_commitment_period_in_blocks] levels.
 
-    Every time a finalized block is processed  by the rollup node,
-    the latter determines whether the last commitment that the node
-    has produced referred to 20 blocks earlier. In this case, it
-    computes and stores a new commitment in a level-indexed map.
+    Every time a finalized block is processed by the rollup node, the
+   latter determines whether the last commitment that the node has
+   produced referred to
+   [Constants.sc_rollup_commitment_period_in_blocks] blocks
+   earlier. In this case, it computes and stores a new commitment in a
+   level-indexed map.
 
-    Stored commitments are signed by the rollup node operator
-    and published on the layer1 chain. To ensure that commitments
-    produced by the rollup node are eventually published,
-    storing and publishing commitments are decoupled. Every time
-    a new head is processed, the node tries to publish the oldest
-    commitment that was not published already.
-*)
+    Stored commitments are signed by the rollup node operator and
+   published on the layer1 chain. To ensure that commitments produced
+   by the rollup node are eventually published, storing and publishing
+   commitments are decoupled. Every time a new head is processed, the
+   node tries to publish the oldest commitment that was not published
+   already.  *)
 
 open Protocol
 open Alpha_context
@@ -67,7 +69,10 @@ module Number_of_messages = Mutable_counter.Make ()
 
 module Number_of_ticks = Mutable_counter.Make ()
 
-let sc_rollup_commitment_period = Int32.of_int 20
+let sc_rollup_commitment_period node_ctxt =
+  Int32.of_int
+  @@ node_ctxt.Node_context.protocol_constants.Constants.parametric
+       .sc_rollup_commitment_period_in_blocks
 
 let last_commitment (module Last_commitment_level : Mutable_level_store) store =
   let open Lwt_syntax in
@@ -86,8 +91,9 @@ let last_commitment_level (module Last_commitment_level : Mutable_level_store)
   | None -> origination_level
   | Some level -> level
 
-let next_commitment_level (module Last_commitment_level : Mutable_level_store)
-    ~origination_level store =
+let next_commitment_level node_ctxt
+    (module Last_commitment_level : Mutable_level_store) ~origination_level
+    store =
   let open Lwt_syntax in
   let+ last_commitment_level =
     last_commitment_level
@@ -98,7 +104,7 @@ let next_commitment_level (module Last_commitment_level : Mutable_level_store)
   Raw_level.of_int32
   @@ Int32.add
        (Raw_level.to_int32 last_commitment_level)
-       sc_rollup_commitment_period
+       (sc_rollup_commitment_period node_ctxt)
 
 let last_commitment_hash (module Last_commitment_level : Mutable_level_store)
     store =
@@ -108,10 +114,11 @@ let last_commitment_hash (module Last_commitment_level : Mutable_level_store)
   | Some commitment -> Sc_rollup.Commitment.hash commitment
   | None -> Sc_rollup.Commitment_hash.zero
 
-let must_store_commitment ~origination_level current_level store =
+let must_store_commitment node_ctxt ~origination_level current_level store =
   let open Lwt_result_syntax in
   let+ next_commitment_level =
     next_commitment_level
+      node_ctxt
       (module Store.Last_stored_commitment_level)
       ~origination_level
       store
@@ -133,11 +140,12 @@ module type S = sig
   module PVM : Pvm.S
 
   (** [process_head node_ctxt store head] checks whether a new
-      commitment needs to be computed and stored, by looking at the level of
-      [head] and checking whether it is a multiple of 20 levels away from
-      [node_ctxt.initial_level]. It uses the functionalities of [PVM] to
-      compute the hash of to be included in the commitment.
-  *)
+     commitment needs to be computed and stored, by looking at the
+     level of [head] and checking whether it is a multiple of
+     [Constants.sc_rollup_commitment_period_in_blocks] levels away
+     from [node_ctxt.initial_level]. It uses the functionalities of
+     [PVM] to compute the hash of to be included in the commitment.
+     *)
 
   val process_head :
     Node_context.t -> Store.t -> Layer1.head -> unit tzresult Lwt.t
@@ -157,7 +165,7 @@ end
 module Make (PVM : Pvm.S) : S with module PVM = PVM = struct
   module PVM = PVM
 
-  let build_commitment ~origination_level store block_hash =
+  let build_commitment node_ctxt ~origination_level store block_hash =
     let open Lwt_result_syntax in
     let lsc =
       (module Store.Last_stored_commitment_level : Mutable_level_store)
@@ -165,7 +173,7 @@ module Make (PVM : Pvm.S) : S with module PVM = PVM = struct
     let*! predecessor = last_commitment_hash lsc store in
     let* inbox_level =
       Lwt.map Environment.wrap_tzresult
-      @@ next_commitment_level ~origination_level lsc store
+      @@ next_commitment_level node_ctxt ~origination_level lsc store
     in
     let*! pvm_state = Store.PVMState.find store block_hash in
     let* compressed_state =
@@ -212,16 +220,18 @@ module Make (PVM : Pvm.S) : S with module PVM = PVM = struct
         compressed_state;
       }
 
-  let store_commitment_if_necessary ~origination_level store current_level
-      block_hash =
+  let store_commitment_if_necessary node_ctxt ~origination_level store
+      current_level block_hash =
     let open Lwt_result_syntax in
     let* must_store_commitment =
       Lwt.map Environment.wrap_tzresult
-      @@ must_store_commitment ~origination_level current_level store
+      @@ must_store_commitment node_ctxt ~origination_level current_level store
     in
     if must_store_commitment then
       let*! () = Commitment_event.compute_commitment block_hash current_level in
-      let* commitment = build_commitment ~origination_level store block_hash in
+      let* commitment =
+        build_commitment node_ctxt ~origination_level store block_hash
+      in
       let*! () = update_last_stored_commitment store commitment in
       return_unit
     else return_unit
@@ -238,7 +248,12 @@ module Make (PVM : Pvm.S) : S with module PVM = PVM = struct
     let current_level = Raw_level.of_int32_exn level in
     let origination_level = node_ctxt.initial_level in
     let* () = update_ticks_and_messages store hash in
-    store_commitment_if_necessary ~origination_level store current_level hash
+    store_commitment_if_necessary
+      node_ctxt
+      ~origination_level
+      store
+      current_level
+      hash
 
   (* TODO: https://gitlab.com/tezos/tezos/-/issues/2869
      use the Injector to publish commitments. *)
@@ -248,6 +263,7 @@ module Make (PVM : Pvm.S) : S with module PVM = PVM = struct
     let* next_level_to_publish =
       Lwt.map Environment.wrap_tzresult
       @@ next_commitment_level
+           node_ctxt
            (module Store.Last_published_commitment_level)
            ~origination_level
            store
