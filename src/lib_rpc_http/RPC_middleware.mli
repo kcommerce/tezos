@@ -23,12 +23,4 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-val transform_callback :
-  callback:(Cohttp_lwt_unix.Server.conn ->
-            Cohttp.Request.t ->
-            Cohttp_lwt.Body.t ->
-            Cohttp_lwt_unix.Server.response_action Lwt.t) ->
-  conn:Cohttp_lwt_unix.Server.conn ->
-  req:Cohttp.Request.t ->
-  body:Cohttp_lwt.Body.t ->
-  Cohttp_lwt_unix.Server.response_action Lwt.t
+val rpc_middleware : Resto_cohttp_server.Server.middleware

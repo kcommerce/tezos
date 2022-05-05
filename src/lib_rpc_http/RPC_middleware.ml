@@ -24,7 +24,7 @@
 (*****************************************************************************)
 
 (* FIXME very hacky, proof-of-concept, etc, etc *)
-let transform_callback ~callback ~conn ~req ~body =
+let transform_callback callback conn req body =
   let open Lwt_syntax in
   let* answer = callback conn req body in
   let open Cohttp in
@@ -33,22 +33,13 @@ let transform_callback ~callback ~conn ~req ~body =
     | `Expert (response, _) | `Response (response, _) ->
         Cohttp.Response.status response = `Not_found
   in
-  let answer_to_string = function
-    | `Expert (response, _) | `Response (response, _) ->
-        Format.asprintf "response:\n  %a" Cohttp.Response.pp_hum response
-  in
-  let () = Stdlib.print_endline @@ answer_to_string answer in
   if answer_has_not_found_status answer then
-    let () = Stdlib.print_endline @@ "Error Not_found, overriding location" in
-    let existing = Uri.to_string uri in
-    Stdlib.print_endline @@ "existing: " ^ existing;
-    Stdlib.print_endline @@ "host: " ^ (Uri.host uri |> Stdlib.Option.get);
-    Stdlib.print_endline @@ "path: " ^ Uri.path uri;
     let overriding = "http://localhost:18731" ^ Uri.path uri in
     let headers = Cohttp.Header.of_list [("location", overriding)] in
-    Stdlib.print_endline ("Overriding with: " ^ overriding);
-    let status = `Moved_permanently in
-    let response = Cohttp.Response.make ~status ~headers () in
+    let response =
+      Cohttp.Response.make ~status:`Moved_permanently ~headers ()
+    in
     Lwt.return (`Response (response, Cohttp_lwt.Body.empty))
-  else
-    Lwt.return answer
+  else Lwt.return answer
+
+let rpc_middleware = Resto_cohttp_server.Server.{transform_callback}

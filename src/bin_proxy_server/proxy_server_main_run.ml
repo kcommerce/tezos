@@ -68,6 +68,7 @@ let launch_rpc_server dir {address; port; tls_cert_and_key} =
            ~host
            mode
            dir
+           ~middleware:Tezos_rpc_http_server.RPC_middleware.rpc_middleware
            ~media_types:Tezos_rpc_http.Media_type.all_media_types)
     (function
       | Unix.Unix_error (Unix.EADDRINUSE, "bind", "") ->
