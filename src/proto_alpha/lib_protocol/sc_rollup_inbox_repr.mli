@@ -151,6 +151,15 @@ val number_of_available_messages : t -> Z.t
     available in [inbox]. *)
 val consume_n_messages : int -> t -> t option tzresult
 
+(** [number_of_non_committed_messages inbox] returns the number of
+    messages that have not been committed yet in [inbox]. *)
+val number_of_non_committed_messages : t -> Z.t
+
+(** [commit_n_messages n inbox] returns an inbox where [n] messages
+   have been marked as committed, or [None] if there are strictly less
+   than [n] messages non committed in [inbox]. *)
+val commit_n_messages : int -> t -> t option tzresult
+
 (** The following operations are subject to cross-validation between
     rollup nodes and the layer 1. *)
 module type MerkelizedOperations = sig

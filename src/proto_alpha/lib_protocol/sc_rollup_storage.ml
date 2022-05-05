@@ -42,6 +42,7 @@ type error +=
       Sc_rollup_repr.Commitment_hash.t
   | (* `Temporary *) Sc_rollup_bad_inbox_level
   | (* `Temporary *) Sc_rollup_max_number_of_available_messages_reached
+  | (* `Temporary *) Sc_rollup_max_number_of_non_committed_messages_reached
 
 let () =
   register_error_kind
@@ -54,6 +55,16 @@ let () =
       | Sc_rollup_max_number_of_available_messages_reached -> Some ()
       | _ -> None)
     (fun () -> Sc_rollup_max_number_of_available_messages_reached) ;
+  register_error_kind
+    `Temporary
+    ~id:"Sc_rollup_max_number_of_non_committed_messages_reached"
+    ~title:"Maximum number of non committed messages reached"
+    ~description:"Maximum number of non committed messages reached"
+    Data_encoding.unit
+    (function
+      | Sc_rollup_max_number_of_non_committed_messages_reached -> Some ()
+      | _ -> None)
+    (fun () -> Sc_rollup_max_number_of_non_committed_messages_reached) ;
   let description = "Already staked." in
   register_error_kind
     `Temporary
@@ -268,6 +279,17 @@ let consume_n_messages ctxt rollup n =
       assert (Compare.Int.(size <= 0)) ;
       return ctxt
 
+(** Try to commit n messages. *)
+let commit_n_messages ctxt rollup n =
+  let open Lwt_tzresult_syntax in
+  let* (ctxt, inbox) = Storage.Sc_rollup.Inbox.get ctxt rollup in
+  Sc_rollup_inbox_repr.commit_n_messages n inbox >>?= function
+  | None -> return ctxt
+  | Some inbox ->
+      let* (ctxt, size) = Storage.Sc_rollup.Inbox.update ctxt rollup inbox in
+      assert (Compare.Int.(size <= 0)) ;
+      return ctxt
+
 let inbox ctxt rollup =
   let open Lwt_tzresult_syntax in
   let* (ctxt, res) = Storage.Sc_rollup.Inbox.find ctxt rollup in
@@ -285,6 +307,17 @@ let assert_inbox_size_ok ctxt inbox extra_num_messages =
   fail_unless
     Compare.Z.(next_size <= Z.of_int max_size)
     Sc_rollup_max_number_of_available_messages_reached
+
+let assert_inbox_nb_non_committed_ok inbox extra_num_messages =
+  let next_size =
+    Z.add
+      (Sc_rollup_inbox_repr.number_of_non_committed_messages inbox)
+      (Z.of_int extra_num_messages)
+  in
+  let max_size = Sc_rollup_repr.Number_of_messages.max_int in
+  fail_unless
+    Compare.Z.(next_size <= Z.of_int32 max_size)
+    Sc_rollup_max_number_of_non_committed_messages_reached
 
 let add_messages ctxt rollup messages =
   let open Lwt_tzresult_syntax in
@@ -309,6 +342,7 @@ let add_messages ctxt rollup messages =
       messages
   in
   let* () = assert_inbox_size_ok ctxt inbox num_messages in
+  let* () = assert_inbox_nb_non_committed_ok inbox num_messages in
   let inbox_level = Sc_rollup_inbox_repr.inbox_level inbox in
   let* origination_level = Storage.Sc_rollup.Initial_level.get ctxt rollup in
   let levels =
@@ -605,6 +639,12 @@ let refine_stake ctxt rollup staker commitment =
 let publish_commitment ctxt rollup staker commitment =
   let open Lwt_tzresult_syntax in
   let* (ctxt, res) = Store.Stakers.find (ctxt, rollup) staker in
+  let nb_committed_messages =
+    Int32.to_int
+    @@ Sc_rollup_repr.Number_of_messages.to_int32
+         commitment.Commitment.number_of_messages
+  in
+  let* ctxt = commit_n_messages ctxt rollup nb_committed_messages in
   match res with
   | None ->
       let* ctxt = deposit_stake ctxt rollup staker in

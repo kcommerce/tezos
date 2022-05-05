@@ -63,6 +63,8 @@ type error += Invalid_level_add_messages of Raw_level_repr.t
 
 type error += Invalid_number_of_messages_to_consume of int64
 
+type error += Invalid_number_of_messages_to_commit of int64
+
 let () =
   let open Data_encoding in
   register_error_kind
@@ -85,7 +87,18 @@ let () =
        integer."
     (obj1 (req "n" int64))
     (function Invalid_number_of_messages_to_consume n -> Some n | _ -> None)
-    (fun n -> Invalid_number_of_messages_to_consume n)
+    (fun n -> Invalid_number_of_messages_to_consume n) ;
+
+  register_error_kind
+    `Permanent
+    ~id:"sc_rollup_inbox.commit_n_messages"
+    ~title:"Internal error: Trying to commit a negative number of messages"
+    ~description:
+      "Sc_rollup_inbox.commit_n_messages must be called with a non negative \
+       integer."
+    (obj1 (req "n" int64))
+    (function Invalid_number_of_messages_to_commit n -> Some n | _ -> None)
+    (fun n -> Invalid_number_of_messages_to_commit n)
 
 module Skip_list_parameters = struct
   let basis = 2
@@ -130,6 +143,8 @@ let pp_history_proof fmt cell =
    - [message_counter] : the number of messages in the [level]'s inbox ;
    - [nb_available_messages] :
      the number of messages that have not been consumed by a commitment cementing ;
+   - [nb_of_non_committed_messages] :
+     the number of messages that have been pushed since the last commitment ;
    - [current_messages_hash] : the root hash of [current_messages] ;
    - [old_levels_messages] : a witness of the inbox history.
 
@@ -155,6 +170,7 @@ type t = {
   rollup : Sc_rollup_repr.t;
   level : Raw_level_repr.t;
   nb_available_messages : int64;
+  nb_non_committed_messages : int64;
   message_counter : Z.t;
   (* Lazy to avoid hashing O(n^2) time in [add_messages] *)
   current_messages_hash : unit -> Context.Proof.hash;
@@ -167,6 +183,7 @@ let equal inbox1 inbox2 =
     rollup;
     level;
     nb_available_messages;
+    nb_non_committed_messages;
     message_counter;
     current_messages_hash;
     old_levels_messages;
@@ -176,6 +193,8 @@ let equal inbox1 inbox2 =
   Sc_rollup_repr.Address.equal rollup inbox2.rollup
   && Raw_level_repr.equal level inbox2.level
   && Compare.Int64.(equal nb_available_messages inbox2.nb_available_messages)
+  && Compare.Int64.(
+       equal nb_non_committed_messages inbox2.nb_non_committed_messages)
   && Z.equal message_counter inbox2.message_counter
   && Context_hash.equal
        (current_messages_hash ())
@@ -190,6 +209,7 @@ let pp fmt inbox =
          level = %a
          current messages hash  = %a
          nb_available_messages = %s
+         nb_non_committed_messages = %s
          message_counter = %a
          old_levels_messages = %a
     |}
@@ -200,6 +220,7 @@ let pp fmt inbox =
     Context_hash.pp
     (inbox.current_messages_hash ())
     (Int64.to_string inbox.nb_available_messages)
+    (Int64.to_string inbox.nb_non_committed_messages)
     Z.pp_print
     inbox.message_counter
     pp_history_proof
@@ -217,6 +238,7 @@ let encoding =
              rollup;
              message_counter;
              nb_available_messages;
+             nb_non_committed_messages;
              level;
              current_messages_hash;
              old_levels_messages;
@@ -224,12 +246,14 @@ let encoding =
         ( rollup,
           message_counter,
           nb_available_messages,
+          nb_non_committed_messages,
           level,
           current_messages_hash (),
           old_levels_messages ))
       (fun ( rollup,
              message_counter,
              nb_available_messages,
+             nb_non_committed_messages,
              level,
              current_messages_hash,
              old_levels_messages ) ->
@@ -237,14 +261,16 @@ let encoding =
           rollup;
           message_counter;
           nb_available_messages;
+          nb_non_committed_messages;
           level;
           current_messages_hash = (fun () -> current_messages_hash);
           old_levels_messages;
         })
-      (obj6
+      (obj7
          (req "rollup" Sc_rollup_repr.encoding)
          (req "message_counter" n)
          (req "nb_available_messages" int64)
+         (req "nb_non_committed_messages" int64)
          (req "level" Raw_level_repr.encoding)
          (req "current_messages_hash" Context_hash.encoding)
          (req "old_levels_messages" old_levels_messages_encoding)))
@@ -259,6 +285,7 @@ let empty rollup level =
     level;
     message_counter = Z.zero;
     nb_available_messages = 0L;
+    nb_non_committed_messages = 0L;
     current_messages_hash = (fun () -> no_messages_hash);
     old_levels_messages = Skip_list.genesis no_messages_hash;
   }
@@ -271,6 +298,21 @@ let consume_n_messages n ({nb_available_messages; _} as inbox) :
   else
     let nb_available_messages = Int64.(sub nb_available_messages (of_int n)) in
     ok (Some {inbox with nb_available_messages})
+
+let number_of_non_committed_messages inbox =
+  Z.of_int64 inbox.nb_non_committed_messages
+
+let commit_n_messages n ({nb_non_committed_messages; _} as inbox) :
+    t option tzresult =
+  if Compare.Int.(n < 0) then
+    error (Invalid_number_of_messages_to_commit (Int64.of_int n))
+  else if Compare.Int64.(Int64.of_int n > nb_non_committed_messages) then
+    ok None
+  else
+    let nb_non_committed_messages =
+      Int64.(sub nb_non_committed_messages (of_int n))
+    in
+    ok (Some {inbox with nb_non_committed_messages})
 
 let key_of_message = Data_encoding.Binary.to_string_exn Data_encoding.z
 
@@ -485,6 +527,7 @@ module MakeHashingScheme (Tree : TREE) :
         {
           rollup = inbox.rollup;
           nb_available_messages = inbox.nb_available_messages;
+          nb_non_committed_messages = inbox.nb_non_committed_messages;
           old_levels_messages;
           level;
           current_messages_hash;
@@ -500,6 +543,7 @@ module MakeHashingScheme (Tree : TREE) :
     aux (history, inbox)
 
   let add_messages history inbox level payloads messages =
+    let open Lwt_tzresult_syntax in
     if Raw_level_repr.(level < inbox.level) then
       fail (Invalid_level_add_messages level)
     else
