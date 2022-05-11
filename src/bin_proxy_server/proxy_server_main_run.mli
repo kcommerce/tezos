@@ -29,6 +29,7 @@ type args = {
   port : int;  (** The port of the server *)
   tls_cert_and_key : (string * string) option;
       (** The paths to the certificate and the key to use for TLS *)
+  endpoint : Uri.t;
 }
 
 (** [run dir args] launches a server honoring [dir], configured by [args] *)

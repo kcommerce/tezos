@@ -61,6 +61,8 @@ let launch_rpc_server dir {address; port; tls_cert_and_key} =
     | Some (cert, key) ->
         `TLS (`Crt_file_path cert, `Key_file_path key, `No_password, `Port port)
   in
+  let middleware = Tezos_rpc_http_server.RPC_middleware.rpc_middleware address port
+  in
   Lwt.catch
     (fun () ->
       Lwt_result.ok
@@ -68,7 +70,7 @@ let launch_rpc_server dir {address; port; tls_cert_and_key} =
            ~host
            mode
            dir
-           ~middleware:Tezos_rpc_http_server.RPC_middleware.rpc_middleware
+           ~middleware
            ~media_types:Tezos_rpc_http.Media_type.all_media_types)
     (function
       | Unix.Unix_error (Unix.EADDRINUSE, "bind", "") ->

@@ -23,4 +23,4 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-val rpc_middleware : Resto_cohttp_server.Server.middleware
+val rpc_middleware : Uri.t -> Resto_cohttp_server.Server.middleware

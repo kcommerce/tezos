@@ -24,7 +24,7 @@
 (*****************************************************************************)
 
 (* FIXME very hacky, proof-of-concept, etc, etc *)
-let transform_callback callback conn req body =
+let make_transform_callback endpoint callback conn req body =
   let open Lwt_syntax in
   let* answer = callback conn req body in
   let open Cohttp in
@@ -34,7 +34,7 @@ let transform_callback callback conn req body =
         Cohttp.Response.status response = `Not_found
   in
   if answer_has_not_found_status answer then
-    let overriding = "http://localhost:18731" ^ Uri.path uri in
+    let overriding = Uri.to_string endpoint ^ Uri.path uri in
     let headers = Cohttp.Header.of_list [("location", overriding)] in
     let response =
       Cohttp.Response.make ~status:`Moved_permanently ~headers ()
@@ -42,4 +42,5 @@ let transform_callback callback conn req body =
     Lwt.return (`Response (response, Cohttp_lwt.Body.empty))
   else Lwt.return answer
 
-let rpc_middleware = Resto_cohttp_server.Server.{transform_callback}
+let rpc_middleware endpoint =
+  Resto_cohttp_server.Server.{transform_callback = make_transform_callback endpoint}
