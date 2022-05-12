@@ -196,7 +196,17 @@ let equal inbox1 inbox2 =
        (inbox2.current_messages_hash ())
   && equal_history_proof old_levels_messages inbox2.old_levels_messages
 
-let pp fmt inbox =
+let pp fmt
+    {
+      rollup;
+      level;
+      nb_available_messages;
+      nb_messages_in_commitment_period;
+      levels_in_commitment_period;
+      message_counter;
+      current_messages_hash;
+      old_levels_messages;
+    } =
   Format.fprintf
     fmt
     {|
@@ -204,20 +214,24 @@ let pp fmt inbox =
          level = %a
          current messages hash  = %a
          nb_available_messages = %s
+         nb_messages_in_commitment_period = %s
+         levels_in_commitment_period = %d
          message_counter = %a
          old_levels_messages = %a
     |}
     Sc_rollup_repr.Address.pp
-    inbox.rollup
+    rollup
     Raw_level_repr.pp
-    inbox.level
+    level
     Context_hash.pp
-    (inbox.current_messages_hash ())
-    (Int64.to_string inbox.nb_available_messages)
+    (current_messages_hash ())
+    (Int64.to_string nb_available_messages)
+    (Int64.to_string nb_messages_in_commitment_period)
+    levels_in_commitment_period
     Z.pp_print
-    inbox.message_counter
+    message_counter
     pp_history_proof
-    inbox.old_levels_messages
+    old_levels_messages
 
 let inbox_level inbox = inbox.level
 
