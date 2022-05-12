@@ -306,9 +306,9 @@ let assert_inbox_nb_messages_in_commitment_period inbox extra_messages =
       (Int64.of_int extra_messages)
   in
   let limit = Int64.of_int32 Sc_rollup_repr.Number_of_messages.max_int in
-  if Compare.Int64.(nb_messages_in_commitment_period > limit) then
-    fail Sc_rollup_max_number_of_messages_reached_for_commitment_period
-  else return ()
+  fail_when
+    Compare.Int64.(nb_messages_in_commitment_period > limit)
+    Sc_rollup_max_number_of_messages_reached_for_commitment_period
 
 let add_messages ctxt rollup messages =
   let open Lwt_tzresult_syntax in
