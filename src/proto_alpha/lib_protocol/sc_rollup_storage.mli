@@ -141,7 +141,7 @@ type error +=
   | (* `Temporary *)
       Sc_rollup_bad_inbox_level
   | (* `Temporary *)
-      Sc_rollup_max_number_of_available_messages_reached_for_commitment_period
+      Sc_rollup_max_number_of_messages_reached_for_commitment_period
 
 (** Module [Internal] implements functions that are used only internally by
     the [Sc_rollup_storage] module, but need to be exposed in tests or
@@ -183,7 +183,7 @@ val kind :
     May fail with:
     {ul
       {li [Sc_rollup_max_available_messages] if [inbox] is full}
-      {li [Sc_rollup_max_number_of_available_messages_reached_for_commitment_period] if
+      {li [Sc_rollup_max_number_of_messages_reached_for_commitment_period] if
       the number of messages pushed during commitment period is too high}
     }
 *)
@@ -422,9 +422,9 @@ val initial_level :
 val get_boot_sector : Raw_context.t -> Sc_rollup_repr.t -> string tzresult Lwt.t
 
 (* [last_cemented_commitment_hash_with_level ctxt sc_rollup] returns the hash
-   and level of the last cemented commitment (lcc) for [sc_rollup]. If the 
-   rollup exists but no lcc exists, the initial commitment 
-   `Sc_rollup.Commitment.zero` together with the rollup origination level is 
+   and level of the last cemented commitment (lcc) for [sc_rollup]. If the
+   rollup exists but no lcc exists, the initial commitment
+   `Sc_rollup.Commitment.zero` together with the rollup origination level is
    returned.
 
   May fail with:

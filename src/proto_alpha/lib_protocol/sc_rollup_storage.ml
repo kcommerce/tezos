@@ -43,7 +43,7 @@ type error +=
   | (* `Temporary *) Sc_rollup_bad_inbox_level
   | (* `Temporary *) Sc_rollup_max_number_of_available_messages_reached
   | (* `Temporary *)
-      Sc_rollup_max_number_of_available_messages_reached_for_commitment_period
+      Sc_rollup_max_number_of_messages_reached_for_commitment_period
 
 let () =
   register_error_kind
@@ -58,19 +58,15 @@ let () =
     (fun () -> Sc_rollup_max_number_of_available_messages_reached) ;
   register_error_kind
     `Temporary
-    ~id:
-      "Sc_rollup_max_number_of_available_messages_reached_for_commitment_period"
-    ~title:"Maximum number of available messages reached for commitment period"
-    ~description:
-      "Maximum number of available messages reached for commitment period"
+    ~id:"Sc_rollup_max_number_of_messages_reached_for_commitment_period"
+    ~title:"Maximum number of messages reached for commitment period"
+    ~description:"Maximum number of messages reached for commitment period"
     Data_encoding.unit
     (function
-      | Sc_rollup_max_number_of_available_messages_reached_for_commitment_period
-        ->
+      | Sc_rollup_max_number_of_messages_reached_for_commitment_period ->
           Some ()
       | _ -> None)
-    (fun () ->
-      Sc_rollup_max_number_of_available_messages_reached_for_commitment_period) ;
+    (fun () -> Sc_rollup_max_number_of_messages_reached_for_commitment_period) ;
   let description = "Already staked." in
   register_error_kind
     `Temporary
@@ -311,8 +307,7 @@ let assert_inbox_nb_messages_in_commitment_period inbox extra_messages =
   in
   let limit = Int64.of_int32 Sc_rollup_repr.Number_of_messages.max_int in
   if Compare.Int64.(nb_messages_in_commitment_period > limit) then
-    fail
-      Sc_rollup_max_number_of_available_messages_reached_for_commitment_period
+    fail Sc_rollup_max_number_of_messages_reached_for_commitment_period
   else return ()
 
 let add_messages ctxt rollup messages =
