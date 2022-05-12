@@ -1051,6 +1051,9 @@ module type ARG = sig
   val chain_id : Chain_id.t
 end
 
+module Worker_instance =
+  Worker.Instance (Name) (Prevalidator_worker_state.Request)
+
 (** The functor that is not tested, in other words used only in production.
     This functor's code is not tested (contrary to functor {!Make_s} above),
     because it hardcodes a dependency to [Store.chain_store] in its instantiation
@@ -1088,7 +1091,7 @@ module Make
        and type Request.view = Request.view
        and type Types.state = Types.state
        and type Types.parameters = Types.parameters =
-    Worker.Make (Name) (Prevalidator_worker_state.Request) (Types)
+    Worker_instance.Make (Types)
 
   open Types
 
