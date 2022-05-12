@@ -1602,7 +1602,7 @@ let test_limit_on_number_of_messages_during_commitment_period () =
   in
   Assert.proto_error ~loc:__LOC__ add_too_many_messages @@ function
   | Sc_rollup_storage
-    .Sc_rollup_max_number_of_available_messages_reached_for_commitment_period ->
+    .Sc_rollup_max_number_of_messages_reached_for_commitment_period ->
       true
   | _ -> false
 
