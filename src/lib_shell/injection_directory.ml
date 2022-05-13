@@ -55,7 +55,7 @@ let inject_block validator ?force ?chain bytes operations =
    [Injection_operation_succeed_case oph]
 
    - If injecting the operation [oph] failed with [err], we use
-   [Injection_operation_error_case oph] followed by [err].    
+   [Injection_operation_error_case oph] followed by [err].
 *)
 type Error_monad.error += Injection_operations_error
 
@@ -129,6 +129,8 @@ let inject_operations validator ~force ?chain bytes_list =
       ([], [])
       bytes_list
   in
+  let hashes = List.rev hashes in
+  let promises = List.rev promises in
   let hashes_array = Array.of_list hashes in
   let fold_errors (has_failed, result, n) promise_result =
     let oph = Array.get hashes_array n in
@@ -137,7 +139,9 @@ let inject_operations validator ~force ?chain bytes_list =
         (has_failed, Injection_operation_succeed_case oph :: result, n + 1)
     | Error trace ->
         (* The list will be reversed. *)
-        (true, trace @ Injection_operation_error_case oph :: result, n + 1)
+        ( true,
+          List.rev_append trace @@ Injection_operation_error_case oph :: result,
+          n + 1 )
   in
   let join_results l =
     let (has_failed, result, _) = List.fold_left fold_errors (false, [], 0) l in
