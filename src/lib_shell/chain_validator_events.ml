@@ -24,6 +24,7 @@
 (*****************************************************************************)
 
 include Internal_event.Simple
+module Request = Chain_validator_worker_state.Request
 
 let section = ["node"; "chain_validator"]
 
@@ -70,3 +71,126 @@ let loading_protocol =
     ~msg:"loading non-embedded protocol {protocol} from disk"
     ~pp1:Protocol_hash.pp
     ("protocol", Protocol_hash.encoding)
+
+let bootstrapped =
+  declare_0
+    ~section
+    ~name:"bootstrapped"
+    ~msg:"chain is bootstrapped"
+    ~level:Notice
+    ()
+
+let synchronisation_status =
+  declare_1
+    ~section
+    ~name:"synchronisation_status"
+    ~msg:"synchronistation status: {status}"
+    ~level:Notice
+    ("status", Chain_validator_worker_state.Event.sync_status_encoding)
+
+let could_not_switch_testchain =
+  declare_1
+    ~section
+    ~name:"could_not_switch_testchain"
+    ~msg:"error while switching testchina: {trace}"
+    ~level:Error
+    ("trace", Error_monad.trace_encoding)
+
+let request_failure =
+  declare_3
+    ~section
+    ~name:"request_failure"
+    ~msg:"chain validator request {view} failed ({worker_status}): {errors}"
+    ~level:Notice
+    ("view", Request.encoding)
+    ("worker_status", Worker_types.request_status_encoding)
+    ("errors", Error_monad.trace_encoding)
+
+let notify_head =
+  declare_1
+    ~section
+    ~name:"notify_head"
+    ~msg:"notify_head from {peer_id}"
+    ~level:Info
+    ("peer_id", P2p_peer.Id.encoding)
+
+let notify_branch =
+  declare_1
+    ~section
+    ~name:"notify_branch"
+    ~msg:"notify branch from {peer_id}"
+    ~level:Notice
+    ("peer_id", P2p_peer.Id.encoding)
+
+let connection =
+  declare_1
+    ~section
+    ~name:"connection"
+    ~msg:"connection of {peer_id}"
+    ~level:Info
+    ("peer_id", P2p_peer.Id.encoding)
+
+let disconnection =
+  declare_1
+    ~section
+    ~name:"disconnection"
+    ~msg:"disconnection of {peer_id}"
+    ~level:Notice
+    ("peer_id", P2p_peer.Id.encoding)
+
+let ignore_head =
+  declare_4
+    ~section
+    ~name:"ignore_head"
+    ~msg:
+      "Current head is better than {view} (level {level}, timestamp \
+       {timestamp}, fitness {fitness}), we do not switch"
+    ~level:Notice
+    ("view", Request.encoding)
+    ("level", Data_encoding.int32)
+    ("timestamp", Time.Protocol.encoding)
+    ("fitness", Fitness.encoding)
+
+let branch_switch =
+  declare_4
+    ~section
+    ~name:"branch_switch"
+    ~msg:
+      "Update current head to {view} (level {level}, timestamp {timestamp}, \
+       fitness {fitness}), changing branch"
+    ~level:Notice
+    ("view", Request.encoding)
+    ("level", Data_encoding.int32)
+    ("timestamp", Time.Protocol.encoding)
+    ("fitness", Fitness.encoding)
+
+let head_increment =
+  declare_4
+    ~section
+    ~name:"head_increment"
+    ~msg:
+      "Update current head to {view} (level {level}, timestamp {timestamp}, \
+       fitness {fitness}), same branch"
+    ~level:Notice
+    ("view", Request.encoding)
+    ("level", Data_encoding.int32)
+    ("timestamp", Time.Protocol.encoding)
+    ("fitness", Fitness.encoding)
+
+let bootstrap_active_peers =
+  declare_2
+    ~section
+    ~name:"bootstrap_active_peers"
+    ~msg:"bootstrap peers: active {active} needed {needed}"
+    ~level:Debug
+    ("active", Data_encoding.int31)
+    ("needed", Data_encoding.int31)
+
+let bootstrap_active_peers_heads_time =
+  declare_2
+    ~section
+    ~name:"bootstrap_active_peers_heads_time"
+    ~msg:"bootstrap peers: active {active} needed {needed}"
+    ~level:Debug
+    ("active", Data_encoding.int31)
+    ("needed", Data_encoding.int31)

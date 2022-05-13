@@ -110,6 +110,7 @@ module Logger =
       let worker_name = "node_chain_validator"
     end)
 
+module Events = Chain_validator_events
 module Worker = Worker.Make (Name) (Event) (Request) (Types) (Logger)
 open Types
 
@@ -182,7 +183,7 @@ let with_activated_peer_validator w peer_id f =
   let nv = Worker.state w in
   let* pv =
     P2p_peer.Error_table.find_or_make nv.active_peers peer_id (fun () ->
-        let*! () = Worker.log_event w (Connection peer_id) in
+        let*! () = Events.(emit connection) peer_id in
         let*! pv =
           Peer_validator.create
             ~notify_new_block:(notify_new_block w (Some peer_id))
@@ -333,7 +334,7 @@ let may_switch_test_chain w active_chains spawn_child block =
   match r with
   | Ok () -> Lwt.return_unit
   | Error err ->
-      Worker.record_event w (Could_not_switch_testchain err) ;
+      let*! () = Events.(emit could_not_switch_testchain) err in
       Lwt.return_unit
 
 let broadcast_head w ~previous block =
@@ -368,9 +369,7 @@ let safe_get_prevalidator_filter hash =
             Protocol_hash.pp_short
             hash
       | Some protocol ->
-          let* () =
-            Chain_validator_event.(emit prevalidator_filter_not_found) hash
-          in
+          let* () = Events.(emit prevalidator_filter_not_found) hash in
           let (module Proto) = protocol in
           let module Filter = Prevalidator_filters.No_filter (Proto) in
           return_ok (module Filter : Prevalidator_filters.FILTER))
@@ -387,9 +386,7 @@ let instantiate_prevalidator parameters set_prevalidator block chain_db =
   in
   match r with
   | Error errs ->
-      let* () =
-        Chain_validator_event.(emit prevalidator_reinstantiation_failure) errs
-      in
+      let* () = Events.(emit prevalidator_reinstantiation_failure) errs in
       set_prevalidator None ;
       Lwt.return_unit
   | Ok prevalidator ->
@@ -540,12 +537,9 @@ let on_request (type a b) w start_testchain active_chains spawn_child
 let on_completion (type a b) w (req : (a, b) Request.t) (update : a)
     request_status =
   match req with
-  | Request.Validated {block; _} ->
+  | Request.Validated {block; _} -> (
       let open Lwt_syntax in
-      let fitness = Store.Block.fitness block in
-      let request = Request.Hash (Store.Block.hash block) in
       let level = Store.Block.level block in
-      let timestamp = Store.Block.timestamp block in
       let () =
         let nv = Worker.state w in
         let () =
@@ -600,20 +594,17 @@ let on_completion (type a b) w (req : (a, b) Request.t) (update : a)
             Shell_metrics.Chain_validator.update_proto (fun () ->
                 collect_proto (nv.parameters.chain_store, block))
       in
-      Worker.record_event
-        w
-        (Processed_block
-           {request; request_status; update; fitness; level; timestamp}) ;
-      Lwt.return_unit
-  | Request.Notify_head (peer_id, _, _, _) ->
-      Worker.record_event w (Event.Notify_head peer_id) ;
-      Lwt.return_unit
-  | Request.Notify_branch (peer_id, _) ->
-      Worker.record_event w (Event.Notify_branch peer_id) ;
-      Lwt.return_unit
-  | Request.Disconnection peer_id ->
-      Worker.record_event w (Event.Disconnection peer_id) ;
-      Lwt.return_unit
+      let fitness = Store.Block.fitness block in
+      let block_hash = Request.Hash (Store.Block.hash block) in
+      let timestamp = Store.Block.timestamp block in
+      let event_infos = (block_hash, level, timestamp, fitness) in
+      match update with
+      | Ignored_head -> Events.(emit ignore_head) event_infos
+      | Branch_switch -> Events.(emit branch_switch) event_infos
+      | Head_increment -> Events.(emit head_increment) event_infos)
+  | Request.Notify_head (peer_id, _, _, _) -> Events.(emit notify_head) peer_id
+  | Request.Notify_branch (peer_id, _) -> Events.(emit notify_branch) peer_id
+  | Request.Disconnection peer_id -> Events.(emit disconnection) peer_id
 
 let on_close w =
   let open Lwt_syntax in
@@ -648,7 +639,7 @@ let may_load_protocols parameters =
         | false -> return_unit
         | true ->
             (* Only compile protocols that are on-disk *)
-            let*! () = Chain_validator_event.(emit loading_protocol protocol) in
+            let*! () = Events.(emit loading_protocol protocol) in
             trace
               (Validation_errors.Cannot_load_protocol protocol)
               (let* _ =
@@ -683,7 +674,7 @@ let on_launch w _ parameters =
   in
   let prevalidator = ref None in
   let when_status_changes status =
-    let*! () = Worker.log_event w (Event.Sync_status status) in
+    let*! () = Events.(emit synchronisation_status) status in
     match status with
     | Synchronisation_heuristic.Synchronised _ ->
         if parameters.start_prevalidator then
@@ -699,7 +690,7 @@ let on_launch w _ parameters =
   let synchronisation_state =
     Synchronisation_heuristic.Bootstrapping.create
       ~when_bootstrapped_changes:(fun b ->
-        if b then Worker.log_event w Event.Bootstrapped else Lwt.return_unit)
+        if b then Events.(emit bootstrapped) () else Lwt.return_unit)
       ~when_status_changes
       ~threshold:parameters.limits.synchronisation.threshold
       ~latency:parameters.limits.synchronisation.latency
@@ -766,7 +757,7 @@ let rec create ~start_testchain ~active_chains ?parent ~block_validator_process
 
     let on_close = on_close
 
-    let on_error (type a b) w st (request : (a, b) Request.t) (errs : b) :
+    let on_error (type a b) _w st (request : (a, b) Request.t) (errs : b) :
         unit tzresult Lwt.t =
       let request_view = Request.view request in
       let emit_and_return_unit errs =
@@ -786,9 +777,7 @@ let rec create ~start_testchain ~active_chains ?parent ~block_validator_process
              example. If there is an error at this level, it certainly
              requires a manual operation from the maintener of the
              node. *)
-          let*! () =
-            Worker.log_event w (Request_failure (request_view, st, errs))
-          in
+          let*! () = Events.(emit request_failure) (request_view, st, errs) in
           Lwt.return_error errs
       (* We do not crash the worker in the following cases mainly for one
          reason: Such request comes from a remote peer. The payload for this
