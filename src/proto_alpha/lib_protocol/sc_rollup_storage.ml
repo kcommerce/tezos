@@ -860,7 +860,7 @@ let get_or_init_game ctxt rollup ~refuter ~defender =
       return (game, ctxt)
 
 (* TODO: #2926 this requires carbonation *)
-let update_game ctxt rollup ~player ~opponent refutation =
+let update_game ctxt rollup pvm_ops ~player ~opponent refutation =
   let open Lwt_tzresult_syntax in
   let alice, bob = Sc_rollup_game_repr.Index.normalize (player, opponent) in
   let* game, ctxt =
@@ -871,7 +871,10 @@ let update_game ctxt rollup ~player ~opponent refutation =
     if Sc_rollup_repr.Staker.equal turn player then return ()
     else fail Sc_rollup_wrong_turn
   in
-  match Sc_rollup_game_repr.play game refutation with
+  let* move_result =
+    Lwt.map Result.ok @@ Sc_rollup_game_repr.play pvm_ops game refutation
+  in
+  match move_result with
   | Either.Left outcome -> return (Some outcome, ctxt)
   | Either.Right new_game ->
       let* ctxt, _ = Store.Game.update (ctxt, rollup) (alice, bob) new_game in

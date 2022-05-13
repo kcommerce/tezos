@@ -237,6 +237,8 @@ module type MerkelizedOperations = sig
      The size of this proof is O(log_basis (L' - L)). *)
   type inclusion_proof
 
+  val inclusion_proof_encoding : inclusion_proof Data_encoding.t
+
   val pp_inclusion_proof : Format.formatter -> inclusion_proof -> unit
 
   (** [number_of_proof_steps proof] returns the length of [proof]. *)
@@ -290,3 +292,25 @@ module MakeHashingScheme (Tree : TREE) :
   MerkelizedOperations with type tree = Tree.tree
 
 include MerkelizedOperations with type tree = Context.tree
+
+type inbox = t
+
+(** XXX *)
+module Proof : sig
+  (** XXX *)
+  type t = {
+    skips : (inbox * inclusion_proof) list;
+    level : inbox;
+    inc : inclusion_proof;
+    message_proof : Context.Proof.tree Context.Proof.t;
+  }
+
+  val encoding : t Data_encoding.t
+
+  (** XXX *)
+  val valid :
+    Raw_level_repr.t * Z.t ->
+    inbox ->
+    t ->
+    (Raw_level_repr.t * Z.t * string option, unit) result Lwt.t
+end

@@ -124,48 +124,6 @@
 
 open Sc_rollup_repr
 
-(** Currently, [Proof] is a dummy type with the structure we need, set
-    up to allow testing. *)
-module Proof : sig
-  (** There are three cases for a refutation game proof:
-
-      [Computation_step]: a simple step in the PVM that doesn't involve
-      any interaction with the inbox.
-
-      [Input_step]: a step in which the PVM 'reads' from the inbox. This
-      will include a proof that the machine is in a blocked state and a
-      proof that the next message to be read is correct. The inbox proof
-      part of this will refer to the [inbox_snapshot] stored in the game
-      type (see {!Sc_rollup_game_repr.t}).
-
-      [Blocked_step]: similar to an input step, this is a step where the
-      machine is in a blocked state. However, it includes a proof that
-      there are no further messages in the inbox at the current level.
-      This means the machine is genuinely blocked and the [stop] state
-      of this [Proof] will be [None]. *)
-  type t =
-    | Computation_step of {
-        valid : bool;
-        start : State_hash.t;
-        stop : State_hash.t;
-      }
-    | Input_step of {valid : bool; start : State_hash.t; stop : State_hash.t}
-    | Blocked_step of {valid : bool; start : State_hash.t}
-
-  val encoding : t Data_encoding.t
-
-  val pp : Format.formatter -> t -> unit
-
-  (** The state hash of the machine before the step. *)
-  val start : t -> State_hash.t
-
-  (** The state hash of the machine after the step. *)
-  val stop : t -> State_hash.t option
-
-  (** Check the validity of a proof *)
-  val valid : t -> bool
-end
-
 (** The two stakers index the game in the storage as a pair of public
     key hashes which is in lexical order. We use [Alice] and [Bob] to
     represent the first and second player in the pair respectively. *)
@@ -271,7 +229,7 @@ val initial :
     intermediate ticks remaining to put in it) or a proof. *)
 type step =
   | Dissection of (State_hash.t option * Sc_rollup_tick_repr.t) list
-  | Proof of Proof.t
+  | Proof of Sc_rollup_proof_repr.t
 
 (** A [refutation] is a move in the game. [choice] is the final tick
     in the current dissection at which the two players agree. *)
@@ -321,4 +279,5 @@ val outcome_encoding : outcome Data_encoding.t
     In the case of the game continuing, this swaps the current
     player and updates the [dissection]. In the case of a [Proof]
     being provided this returns an [outcome]. *)
-val play : t -> refutation -> (outcome, t) Either.t
+val play :
+  Sc_rollup_proof_repr.pvm_ops -> t -> refutation -> (outcome, t) Either.t Lwt.t

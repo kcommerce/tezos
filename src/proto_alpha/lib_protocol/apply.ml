@@ -1757,7 +1757,15 @@ let apply_external_manager_operation_content :
       in
       return (ctxt, result, [])
   | Sc_rollup_refute {rollup; opponent; refutation} ->
-      Sc_rollup.update_game ctxt rollup ~player:source ~opponent refutation
+      Sc_rollup.kind_e ctxt rollup >>=? fun kind ->
+      let pvm_ops = Sc_rollups.pvm_ops_of_kind kind in
+      Sc_rollup.update_game
+        ctxt
+        rollup
+        pvm_ops
+        ~player:source
+        ~opponent
+        refutation
       >>=? fun (outcome, ctxt) ->
       (match outcome with
       | None -> return (Sc_rollup.Game.Ongoing, ctxt)

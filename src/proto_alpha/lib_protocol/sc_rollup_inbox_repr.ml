@@ -310,6 +310,8 @@ module type MerkelizedOperations = sig
 
   type inclusion_proof
 
+  val inclusion_proof_encoding : inclusion_proof Data_encoding.t
+
   val pp_inclusion_proof : Format.formatter -> inclusion_proof -> unit
 
   val number_of_proof_steps : inclusion_proof -> int
@@ -518,6 +520,10 @@ module MakeHashingScheme (Tree : TREE) :
      structures with the same guarantee about the size of proofs. *)
   type inclusion_proof = history_proof list
 
+  let inclusion_proof_encoding =
+    let open Data_encoding in
+    list history_proof_encoding
+
   let pp_inclusion_proof fmt proof =
     Format.pp_print_list pp_history_proof fmt proof
 
@@ -570,3 +576,78 @@ include (
     type key = string list
   end) :
     MerkelizedOperations with type tree = Context.tree)
+
+type inbox = t
+
+(** XXX *)
+module Proof = struct
+  type t = {
+    skips : (inbox * inclusion_proof) list;
+    level : inbox;
+    inc : inclusion_proof;
+    message_proof : Context.Proof.tree Context.Proof.t;
+  }
+
+  let encoding =
+    let open Data_encoding in
+    conv
+      (fun {skips; level; inc; message_proof} ->
+        (skips, level, inc, message_proof))
+      (fun (skips, level, inc, message_proof) ->
+        {skips; level; inc; message_proof})
+      (obj4
+         (req "skips" (list (tup2 encoding inclusion_proof_encoding)))
+         (req "level" encoding)
+         (req "inc" inclusion_proof_encoding)
+         (req
+            "message_proof"
+            Context.Proof_encoding.V2.Tree32.tree_proof_encoding))
+
+  let split_proof proof =
+    match proof.skips with
+    | [] -> None
+    | (level, inc) :: rest -> Some (level, inc, {proof with skips = rest})
+
+  let bottom_level proof =
+    match proof.skips with [] -> proof.level | (level, _) :: _ -> level
+
+  let message_payload n tree =
+    let open Lwt_syntax in
+    let* r = get_message_payload tree n in
+    return (tree, r)
+
+  let check_hash hash kinded_hash =
+    match kinded_hash with
+    | `Node h -> Context_hash.equal h hash
+    | `Value h -> Context_hash.equal h hash
+
+  let drop_error result = Lwt.map (Result.map_error (fun _ -> ())) result
+
+  let rec valid (l, n) inbox proof =
+    let open Lwt_result_syntax in
+    match split_proof proof with
+    | None ->
+        if
+          verify_inclusion_proof proof.inc proof.level inbox
+          && Raw_level_repr.equal (inbox_level proof.level) l
+          && check_hash
+               (proof.level.current_messages_hash ())
+               proof.message_proof.before
+        then
+          let* (_, payload) =
+            drop_error
+            @@ Context.verify_tree_proof proof.message_proof (message_payload n)
+          in
+          match payload with
+          | None ->
+              if equal proof.level inbox then return (l, n, None) else fail ()
+          | Some _ -> return (l, n, payload)
+        else fail ()
+    | Some (level, inc, remaining_proof) ->
+        if
+          verify_inclusion_proof inc level (bottom_level remaining_proof)
+          && Raw_level_repr.equal (inbox_level level) l
+          && Z.equal level.message_counter n
+        then valid (Raw_level_repr.succ l, Z.zero) inbox remaining_proof
+        else fail ()
+end

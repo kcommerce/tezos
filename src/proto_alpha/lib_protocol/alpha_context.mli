@@ -2545,7 +2545,7 @@ module Sc_rollup : sig
 
       val add_messages_no_history :
         t ->
-        Raw_level_repr.t ->
+        Raw_level.t ->
         string list ->
         message ->
         (message * t, error trace) result Lwt.t
@@ -2555,6 +2555,8 @@ module Sc_rollup : sig
       val get_message_payload : messages -> Z.t -> string option Lwt.t
 
       type inclusion_proof
+
+      val inclusion_proof_encoding : inclusion_proof Data_encoding.t
 
       val pp_inclusion_proof : Format.formatter -> inclusion_proof -> unit
 
@@ -2589,24 +2591,39 @@ module Sc_rollup : sig
 
     module MakeHashingScheme (Tree : TREE) :
       MerkelizedOperations with type tree = Tree.tree
+
+    module Proof : sig
+      type t
+    end
+  end
+
+  module Proof : sig
+    type pvm_ops = {
+      eval :
+        (Raw_level.t * Z.t * string) option ->
+        Context.tree ->
+        (Context.tree * unit) Lwt.t;
+      expect_input :
+        Context.tree -> (Context.tree * (Raw_level.t * Z.t) option) Lwt.t;
+    }
+
+    type t =
+      | Computation_step of {
+          step : Context.Proof.tree Context.Proof.t;
+          not_input : Context.Proof.tree Context.Proof.t;
+        }
+      | Input_step of {
+          step : Context.Proof.tree Context.Proof.t;
+          input : Context.Proof.tree Context.Proof.t;
+          inbox : Inbox.Proof.t;
+        }
+      | Blocked_step of {
+          input : Context.Proof.tree Context.Proof.t;
+          inbox : Inbox.Proof.t;
+        }
   end
 
   module Game : sig
-    module Proof : sig
-      type t =
-        | Computation_step of {
-            valid : bool;
-            start : State_hash.t;
-            stop : State_hash.t;
-          }
-        | Input_step of {
-            valid : bool;
-            start : State_hash.t;
-            stop : State_hash.t;
-          }
-        | Blocked_step of {valid : bool; start : State_hash.t}
-    end
-
     type player = Alice | Bob
 
     type t = {
@@ -2706,6 +2723,7 @@ module Sc_rollup : sig
   val update_game :
     context ->
     t ->
+    Proof.pvm_ops ->
     player:Staker.t ->
     opponent:Staker.t ->
     Game.refutation ->
