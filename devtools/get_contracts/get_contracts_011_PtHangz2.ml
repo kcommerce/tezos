@@ -223,4 +223,4 @@ end
 
 module Main = Get_contracts.Make (Proto)
 
-let () = Main.main ()
+let () = Get_contracts.main (module Main)
