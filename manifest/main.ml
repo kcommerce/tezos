@@ -3910,7 +3910,7 @@ let _git_gas_diff =
     ~release:false
     ~bisect_ppx:false
 
-let _get_contracts_lib =
+let get_contracts_lib =
   private_lib
     "get_contracts"
     ~path:"devtools/get_contracts"
@@ -3922,6 +3922,37 @@ let _get_contracts_lib =
     ~static:false
     ~release:false
     ~bisect_ppx:false
+
+let _get_contracts =
+  List.filter_map
+    (fun proto ->
+      let ( let+ ) o f = Option.map f o in
+      let proto_version =
+        match Protocol.number proto with
+        | Alpha | Other -> Protocol.name proto
+        | V n -> Format.sprintf "%03d_%s" n (Protocol.name proto)
+      in
+      let name = "get_contracts_" ^ proto_version in
+      let main = Protocol.main proto in
+      let+ client = Protocol.client proto in
+      private_exe
+        name
+        ~path:"devtools/get_contracts"
+        ~synopsis:"A script to extract smart contracts from a node."
+        ~opam:""
+        ~deps:[main; client; get_contracts_lib]
+        ~modules:[name]
+        ~opens:
+          [
+            "Tezos_base__TzPervasives";
+            "Tezos_raw_protocol_" ^ proto_version;
+            "Tezos_protocol_environment_" ^ proto_version;
+            "Tezos_client_" ^ proto_version;
+          ]
+        ~static:false
+        ~release:false
+        ~bisect_ppx:false)
+    Protocol.active
 
 let _s_packer =
   private_exe
