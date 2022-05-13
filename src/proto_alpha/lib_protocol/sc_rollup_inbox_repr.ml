@@ -132,8 +132,8 @@ let pp_history_proof fmt cell =
      the number of messages that have not been consumed by a commitment cementing ;
    - [nb_messages_in_commitment_period] :
      the number of messages during the commitment period ;
-   - [levels_in_commitment_period] :
-     the number of levels since the beginning of the commitment period ;
+   - [starting_level_of_current_commitment_period] :
+     the level marking the beginning of the current commitment period ;
    - [current_messages_hash] : the root hash of [current_messages] ;
    - [old_levels_messages] : a witness of the inbox history.
 
@@ -160,7 +160,7 @@ type t = {
   level : Raw_level_repr.t;
   nb_available_messages : int64;
   nb_messages_in_commitment_period : int64;
-  levels_in_commitment_period : int;
+  starting_level_of_current_commitment_period : Raw_level_repr.t;
   message_counter : Z.t;
   (* Lazy to avoid hashing O(n^2) time in [add_messages] *)
   current_messages_hash : unit -> Context.Proof.hash;
@@ -174,7 +174,7 @@ let equal inbox1 inbox2 =
     level;
     nb_available_messages;
     nb_messages_in_commitment_period;
-    levels_in_commitment_period;
+    starting_level_of_current_commitment_period;
     message_counter;
     current_messages_hash;
     old_levels_messages;
@@ -188,8 +188,10 @@ let equal inbox1 inbox2 =
        equal
          nb_messages_in_commitment_period
          inbox2.nb_messages_in_commitment_period)
-  && Compare.Int.(
-       equal levels_in_commitment_period inbox2.levels_in_commitment_period)
+  && Raw_level_repr.(
+       equal
+         starting_level_of_current_commitment_period
+         inbox2.starting_level_of_current_commitment_period)
   && Z.equal message_counter inbox2.message_counter
   && Context_hash.equal
        (current_messages_hash ())
@@ -202,7 +204,7 @@ let pp fmt
       level;
       nb_available_messages;
       nb_messages_in_commitment_period;
-      levels_in_commitment_period;
+      starting_level_of_current_commitment_period;
       message_counter;
       current_messages_hash;
       old_levels_messages;
@@ -215,7 +217,7 @@ let pp fmt
          current messages hash  = %a
          nb_available_messages = %s
          nb_messages_in_commitment_period = %s
-         levels_in_commitment_period = %d
+         starting_level_of_current_commitment_period = %a
          message_counter = %a
          old_levels_messages = %a
     |}
@@ -227,7 +229,8 @@ let pp fmt
     (current_messages_hash ())
     (Int64.to_string nb_available_messages)
     (Int64.to_string nb_messages_in_commitment_period)
-    levels_in_commitment_period
+    Raw_level_repr.pp
+    starting_level_of_current_commitment_period
     Z.pp_print
     message_counter
     pp_history_proof
@@ -246,7 +249,7 @@ let encoding =
              message_counter;
              nb_available_messages;
              nb_messages_in_commitment_period;
-             levels_in_commitment_period;
+             starting_level_of_current_commitment_period;
              level;
              current_messages_hash;
              old_levels_messages;
@@ -255,7 +258,7 @@ let encoding =
           message_counter,
           nb_available_messages,
           nb_messages_in_commitment_period,
-          levels_in_commitment_period,
+          starting_level_of_current_commitment_period,
           level,
           current_messages_hash (),
           old_levels_messages ))
@@ -263,7 +266,7 @@ let encoding =
              message_counter,
              nb_available_messages,
              nb_messages_in_commitment_period,
-             levels_in_commitment_period,
+             starting_level_of_current_commitment_period,
              level,
              current_messages_hash,
              old_levels_messages ) ->
@@ -272,7 +275,7 @@ let encoding =
           message_counter;
           nb_available_messages;
           nb_messages_in_commitment_period;
-          levels_in_commitment_period;
+          starting_level_of_current_commitment_period;
           level;
           current_messages_hash = (fun () -> current_messages_hash);
           old_levels_messages;
@@ -282,7 +285,9 @@ let encoding =
          (req "message_counter" n)
          (req "nb_available_messages" int64)
          (req "nb_messages_in_commitment_period" int64)
-         (req "levels_in_commitment_period" int31)
+         (req
+            "starting_level_of_current_commitment_period"
+            Raw_level_repr.encoding)
          (req "level" Raw_level_repr.encoding)
          (req "current_messages_hash" Context_hash.encoding)
          (req "old_levels_messages" old_levels_messages_encoding)))
@@ -292,14 +297,15 @@ let number_of_available_messages inbox = Z.of_int64 inbox.nb_available_messages
 let number_of_messages_during_commitment_period inbox =
   inbox.nb_messages_in_commitment_period
 
-let start_new_commitment_period inbox =
+let start_new_commitment_period inbox level =
   {
     inbox with
-    levels_in_commitment_period = 0;
+    starting_level_of_current_commitment_period = level;
     nb_messages_in_commitment_period = 0L;
   }
 
-let levels_in_commitment_period inbox = inbox.levels_in_commitment_period
+let starting_level_of_current_commitment_period inbox =
+  inbox.starting_level_of_current_commitment_period
 
 let no_messages_hash = Context_hash.hash_bytes [Bytes.empty]
 
@@ -310,7 +316,7 @@ let empty rollup level =
     message_counter = Z.zero;
     nb_available_messages = 0L;
     nb_messages_in_commitment_period = 0L;
-    levels_in_commitment_period = 0;
+    starting_level_of_current_commitment_period = level;
     current_messages_hash = (fun () -> no_messages_hash);
     old_levels_messages = Skip_list.genesis no_messages_hash;
   }
@@ -532,7 +538,6 @@ module MakeHashingScheme (Tree : TREE) :
           (inbox.current_messages_hash ())
       in
       let level = Raw_level_repr.succ inbox.level in
-      let levels_in_commitment_period = inbox.levels_in_commitment_period + 1 in
       let current_messages_hash () = no_messages_hash in
       let inbox =
         {
@@ -540,7 +545,8 @@ module MakeHashingScheme (Tree : TREE) :
           nb_available_messages = inbox.nb_available_messages;
           nb_messages_in_commitment_period =
             inbox.nb_messages_in_commitment_period;
-          levels_in_commitment_period;
+          starting_level_of_current_commitment_period =
+            inbox.starting_level_of_current_commitment_period;
           old_levels_messages;
           level;
           current_messages_hash;

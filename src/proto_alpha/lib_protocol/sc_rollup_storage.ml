@@ -311,11 +311,13 @@ let assert_inbox_nb_messages_in_commitment_period inbox extra_messages =
     Sc_rollup_max_number_of_messages_reached_for_commitment_period
 
 let add_messages ctxt rollup messages =
+  let {Level_repr.level; _} = Raw_context.current_level ctxt in
   let open Lwt_tzresult_syntax in
   let open Raw_context in
   let commitment_period =
-    Constants_storage.sc_rollup_commitment_period_in_blocks ctxt
+    Constants_storage.sc_rollup_commitment_period_in_blocks ctxt |> Int32.of_int
   in
+
   let* (inbox, ctxt) = inbox ctxt rollup in
   let* (num_messages, total_messages_size, ctxt) =
     List.fold_left_es
@@ -336,12 +338,20 @@ let add_messages ctxt rollup messages =
       messages
   in
   let* () = assert_inbox_size_ok ctxt inbox num_messages in
+  let start =
+    Sc_rollup_inbox_repr.starting_level_of_current_commitment_period inbox
+  in
+  let freshness = Raw_level_repr.diff level start in
   let inbox =
-    if
-      Compare.Int.(
-        Sc_rollup_inbox_repr.levels_in_commitment_period inbox
-        = commitment_period)
-    then Sc_rollup_inbox_repr.start_new_commitment_period inbox
+    if Compare.Int32.(freshness >= commitment_period) then
+      let nb_periods =
+        Int32.(
+          to_int
+            ((mul (div (add one freshness) commitment_period))
+               commitment_period))
+      in
+      let new_starting_level = Raw_level_repr.(add start nb_periods) in
+      Sc_rollup_inbox_repr.start_new_commitment_period inbox new_starting_level
     else inbox
   in
   let* () = assert_inbox_nb_messages_in_commitment_period inbox num_messages in
@@ -359,7 +369,6 @@ let add_messages ctxt rollup messages =
     Sc_rollup_costs.cost_add_messages ~num_messages ~total_messages_size levels
   in
   let*? ctxt = Raw_context.consume_gas ctxt gas_cost_add_messages in
-  let {Level_repr.level; _} = Raw_context.current_level ctxt in
   (*
       Notice that the protocol is forgetful: it throws away the inbox
       history. On the contrary, the history is stored by the rollup
