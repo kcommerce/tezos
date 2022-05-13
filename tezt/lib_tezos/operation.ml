@@ -366,6 +366,44 @@ let runnable_inject_operation ?(async = false) ?(force = false) ~unsigned_op
   in
   inject ~async ~data:(`String signed_op) client
 
+let inject_operations ?(async = false) ?(force = false) ?wait_for_injection ~ops
+    client =
+  let waiter =
+    match wait_for_injection with
+    | None -> Lwt.return_unit
+    | Some node -> Node.wait_for_request ~request:`Inject node
+  in
+  let*! json =
+    RPC.private_inject_operations
+      ~async
+      ~force
+      ~data:
+        (`A
+          (List.map
+             (fun (`Hex unsigned_op, `Hex signature) ->
+               `String (unsigned_op ^ signature))
+             ops))
+      client
+  in
+  let* () = waiter in
+  let result =
+    JSON.(
+      json |> as_list |> List.map (fun json -> `OpHash (JSON.as_string json)))
+  in
+  return result
+
+let runnable_inject_operations ?(async = false) ?(force = false) ~ops client =
+  RPC.private_inject_operations
+    ~async
+    ~force
+    ~data:
+      (`A
+        (List.map
+           (fun (`Hex unsigned_op, `Hex signature) ->
+             `String (unsigned_op ^ signature))
+           ops))
+    client
+
 let forge_and_inject_operation ?protocol ?branch ?async ?force
     ?wait_for_injection ~batch ~signer client =
   let* branch = get_injection_branch ?branch client in

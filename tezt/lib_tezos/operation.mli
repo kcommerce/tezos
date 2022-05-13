@@ -241,6 +241,33 @@ val runnable_inject_operation :
   Client.t ->
   JSON.t Runnable.process
 
+(** Inject a list of forged operation with their signature.
+
+    If the [force] argument (by default [false]) is [true], then the
+    operations are immediatly injected. The injection will succeed,
+    but it does not mean the operations are (all) valid.
+
+    The [async] argument, whose default value is [false], is passed to
+    the RPC during injection.
+
+    On success, the function returns the list of injected operations
+    hash.
+*)
+val inject_operations :
+  ?async:bool ->
+  ?force:bool ->
+  ?wait_for_injection:Node.t ->
+  ops:(Hex.t * Hex.t) list ->
+  Client.t ->
+  [`OpHash of string] list Lwt.t
+
+val runnable_inject_operations :
+  ?async:bool ->
+  ?force:bool ->
+  ops:(Hex.t * Hex.t) list ->
+  Client.t ->
+  JSON.t Runnable.process
+
 (** [forge_and_inject_operation] allows to forge, sign and inject to a
     node, via the provided [client], the list [batch] of managed operations.
     The forged operation is signed by the given [signer] account.
