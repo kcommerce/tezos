@@ -342,19 +342,17 @@ let add_messages ctxt rollup messages =
   in
   let freshness = Raw_level_repr.diff level start in
   let inbox =
-    if Compare.Int32.(freshness >= commitment_period) then (
+    let open Int32 in
+    let open Compare.Int32 in
+    if freshness >= commitment_period then (
       let nb_periods =
-        Int32.(
-          to_int ((mul (div freshness commitment_period)) commitment_period))
+        to_int ((mul (div freshness commitment_period)) commitment_period)
       in
       let new_starting_level = Raw_level_repr.(add start nb_periods) in
       assert (Raw_level_repr.(new_starting_level <= level)) ;
       assert (
-        Compare.Int32.(
-          Int32.rem
-            (Raw_level_repr.diff new_starting_level start)
-            commitment_period
-          = 0l)) ;
+        rem (Raw_level_repr.diff new_starting_level start) commitment_period
+        = 0l) ;
       Sc_rollup_inbox_repr.start_new_commitment_period inbox new_starting_level)
     else inbox
   in
