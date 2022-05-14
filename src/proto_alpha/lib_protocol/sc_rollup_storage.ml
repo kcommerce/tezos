@@ -317,7 +317,6 @@ let add_messages ctxt rollup messages =
   let commitment_period =
     Constants_storage.sc_rollup_commitment_period_in_blocks ctxt |> Int32.of_int
   in
-
   let* (inbox, ctxt) = inbox ctxt rollup in
   let* (num_messages, total_messages_size, ctxt) =
     List.fold_left_es
@@ -343,15 +342,20 @@ let add_messages ctxt rollup messages =
   in
   let freshness = Raw_level_repr.diff level start in
   let inbox =
-    if Compare.Int32.(freshness >= commitment_period) then
+    if Compare.Int32.(freshness >= commitment_period) then (
       let nb_periods =
         Int32.(
-          to_int
-            ((mul (div (add one freshness) commitment_period))
-               commitment_period))
+          to_int ((mul (div freshness commitment_period)) commitment_period))
       in
       let new_starting_level = Raw_level_repr.(add start nb_periods) in
-      Sc_rollup_inbox_repr.start_new_commitment_period inbox new_starting_level
+      assert (Raw_level_repr.(new_starting_level <= level)) ;
+      assert (
+        Compare.Int32.(
+          Int32.rem
+            (Raw_level_repr.diff new_starting_level start)
+            commitment_period
+          = 0l)) ;
+      Sc_rollup_inbox_repr.start_new_commitment_period inbox new_starting_level)
     else inbox
   in
   let* () = assert_inbox_nb_messages_in_commitment_period inbox num_messages in
