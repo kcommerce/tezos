@@ -198,7 +198,6 @@ type t = {
   dissection : (State_hash.t option * Sc_rollup_tick_repr.t) list;
 }
 
-
 (** Return the other player *)
 val opponent : player -> player
 

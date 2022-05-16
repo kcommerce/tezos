@@ -68,8 +68,7 @@ let proof_start_state proof =
 let proof_stop_state proof =
   let open Sc_rollup_game_repr.Proof in
   match proof with
-  | Computation_step {stop; _} | Input_step {stop; _} ->
-       (to_PVM_state_hash stop)
+  | Computation_step {stop; _} | Input_step {stop; _} -> to_PVM_state_hash stop
   | Blocked_step _ -> assert false
 
 let check pred =
@@ -80,7 +79,7 @@ let check_dissection start_tick stop_tick dissection =
   let length = List.length dissection > 2 in
   let ends =
     match (List.hd dissection, List.last_opt dissection) with
-    | (Some (_, a_tick), Some (_, b_tick)) ->
+    | Some (_, a_tick), Some (_, b_tick) ->
         Sc_rollup_tick_repr.(a_tick = start_tick && b_tick = stop_tick)
     | _ -> false
   in
@@ -270,8 +269,8 @@ end) : TestPVM with type state = int = struct
 
     let make_proof s1 s2 v =
       match (s1, s2) with
-      | (None, _) -> assert false
-      | (Some start_hash, Some stop_hash) ->
+      | None, _ -> assert false
+      | Some start_hash, Some stop_hash ->
           Lwt.return
           @@ Sc_rollup_game_repr.Proof.(
                Computation_step
@@ -280,7 +279,7 @@ end) : TestPVM with type state = int = struct
                    stop = of_PVM_state_hash @@ stop_hash;
                    valid = v;
                  })
-      | (Some start_hash, None) ->
+      | Some start_hash, None ->
           Lwt.return
           @@ Sc_rollup_game_repr.Proof.(
                Blocked_step {start = of_PVM_state_hash start_hash; valid = v})
@@ -342,8 +341,8 @@ end) : TestPVM with type state = string * int list = struct
 
     let make_proof s1 s2 v =
       match (s1, s2) with
-      | (None, _) -> assert false
-      | (Some start_hash, Some stop_hash) ->
+      | None, _ -> assert false
+      | Some start_hash, Some stop_hash ->
           Lwt.return
           @@ Sc_rollup_game_repr.Proof.(
                Computation_step
@@ -352,7 +351,7 @@ end) : TestPVM with type state = string * int list = struct
                    stop = of_PVM_state_hash @@ stop_hash;
                    valid = v;
                  })
-      | (Some start_hash, None) ->
+      | Some start_hash, None ->
           Lwt.return
           @@ Sc_rollup_game_repr.Proof.(
                Blocked_step {start = of_PVM_state_hash start_hash; valid = v})
@@ -394,7 +393,7 @@ module ContextPVM = Sc_rollup_arith.Make (struct
   type proof = Sc_rollup_game_repr.Proof.t
 
   let verify_proof proof f =
-    let* (a, r) = f empty_tree in
+    let* a, r = f empty_tree in
     if Sc_rollup_game_repr.Proof.valid proof then return (Ok (a, r))
     else return (Error (`Proof_mismatch "Wrong proof"))
 
@@ -405,9 +404,9 @@ module ContextPVM = Sc_rollup_arith.Make (struct
     to_state_hash @@ Sc_rollup_game_repr.Proof.start proof
 
   let proof_stop_state proof =
-    match   (Sc_rollup_game_repr.Proof.stop proof) with
-    Some a -> to_state_hash a
-    |None -> assert false
+    match Sc_rollup_game_repr.Proof.stop proof with
+    | Some a -> to_state_hash a
+    | None -> assert false
 
   let proof_encoding = Sc_rollup_game_repr.Proof.encoding
 end)
@@ -461,8 +460,8 @@ end) : TestPVM = struct
 
     let make_proof s1 s2 v =
       match (s1, s2) with
-      | (None, _) -> assert false
-      | (Some start_hash, Some stop_hash) ->
+      | None, _ -> assert false
+      | Some start_hash, Some stop_hash ->
           Lwt.return
           @@ Sc_rollup_game_repr.Proof.(
                Computation_step
@@ -471,7 +470,7 @@ end) : TestPVM = struct
                    stop = of_PVM_state_hash @@ stop_hash;
                    valid = v;
                  })
-      | (Some start_hash, None) ->
+      | Some start_hash, None ->
           Lwt.return
           @@ Sc_rollup_game_repr.Proof.(
                Blocked_step {start = of_PVM_state_hash start_hash; valid = v})
@@ -553,9 +552,7 @@ struct
                   (fun tick ->
                     let hash =
                       Lwt_main.run
-                      @@ let* (state, _) =
-                           state_at tick start_state start_tick
-                         in
+                      @@ let* state, _ = state_at tick start_state start_tick in
                          match state with
                          | None -> Lwt.return None
                          | Some s ->
@@ -580,7 +577,7 @@ struct
     let refuter = refuter_client.signature in
     let* start_hash = PVM.state_hash PVM.Utils.default_state in
     let* initial_data = defender_client.initial in
-    let (tick, initial_hash) =
+    let tick, initial_hash =
       match initial_data with None -> assert false | Some s -> s
     in
     let int_tick =
@@ -639,7 +636,7 @@ struct
    evaluation.
   *)
   let conflicting_section tick state =
-    let* (new_state, _) =
+    let* new_state, _ =
       state_at tick PVM.Utils.default_state Sc_rollup_tick_repr.initial
     in
     let* new_hash =
@@ -688,12 +685,12 @@ struct
   let random_decision d =
     let cardinal = List.length d in
     let x = max 0 (Random.int (cardinal - 1)) in
-    let (start_state, start) =
+    let start_state, start =
       match List.nth d x with
       | Some (s, t) -> (Option.map to_PVM_state_hash s, t)
       | None -> assert false
     in
-    let (_, stop) =
+    let _, stop =
       match List.nth d (x + 1) with
       | Some (s, t) -> (Option.map to_PVM_state_hash s, t)
       | None -> assert false
@@ -707,7 +704,7 @@ struct
     match random_dissection with
     | None ->
         let new_hash = random_hash () in
-        let* (correct_state, _) =
+        let* correct_state, _ =
           state_at stop PVM.Utils.default_state Sc_rollup_tick_repr.initial
         in
         let* valid =
@@ -780,7 +777,7 @@ struct
 
     match conflict with
     | Some ((_, start_tick), (_, next_tick)) ->
-        let* (start_state, _) =
+        let* start_state, _ =
           state_at
             start_tick
             PVM.Utils.default_state
@@ -790,7 +787,7 @@ struct
           dissection_of_section start_tick start_state next_tick
         in
 
-        let* (stop_state, _) =
+        let* stop_state, _ =
           state_at next_tick PVM.Utils.default_state Sc_rollup_tick_repr.initial
         in
         let* refutation =
@@ -825,7 +822,7 @@ struct
   let machine_directed_committer pred signature =
     let start_state = PVM.Utils.default_state in
     let initial =
-      let* (stop_at, stop_state) =
+      let* stop_at, stop_state =
         execute_until Sc_rollup_tick_repr.initial start_state @@ fun tick _ ->
         pred tick
       in
@@ -1005,9 +1002,9 @@ let testing_randomPVM
     (Gen.list_size Gen.small_int (Gen.int_range 0 100))
     (fun initial_prog ->
       assume (initial_prog <> []) ;
-      let (s1, _, _) = Signature.generate_key () in
-      let (s2, _, _) = Signature.generate_key () in
-      let (s1, s2) =
+      let s1, _, _ = Signature.generate_key () in
+      let s2, _, _ = Signature.generate_key () in
+      let s1, s2 =
         match Staker.compare s1 s2 with 1 -> (s1, s2) | _ -> (s2, s1)
       in
 
@@ -1040,9 +1037,9 @@ let testing_countPVM
   let open QCheck2 in
   Test.make ~name Gen.small_int (fun target ->
       assume (target > 200) ;
-      let (s1, _, _) = Signature.generate_key () in
-      let (s2, _, _) = Signature.generate_key () in
-      let (s1, s2) =
+      let s1, _, _ = Signature.generate_key () in
+      let s2, _, _ = Signature.generate_key () in
+      let s1, s2 =
         match Staker.compare s1 s2 with 1 -> (s1, s2) | _ -> (s2, s1)
       in
       let rollup = Sc_rollup_repr.Address.hash_string [""] in
@@ -1075,9 +1072,9 @@ let testing_arith
     Gen.(pair gen_list small_int)
     (fun (inputs, evals) ->
       assume (evals > 1 && evals < List.length inputs - 1) ;
-      let (s1, _, _) = Signature.generate_key () in
-      let (s2, _, _) = Signature.generate_key () in
-      let (s1, s2) =
+      let s1, _, _ = Signature.generate_key () in
+      let s2, _, _ = Signature.generate_key () in
+      let s1, s2 =
         match Staker.compare s1 s2 with 1 -> (s1, s2) | _ -> (s2, s1)
       in
       let rollup = Sc_rollup_repr.Address.hash_string [""] in
