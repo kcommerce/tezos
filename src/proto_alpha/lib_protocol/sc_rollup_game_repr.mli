@@ -198,10 +198,6 @@ type t = {
   dissection : (State_hash.t option * Sc_rollup_tick_repr.t) list;
 }
 
-val pp_dissection :
-  Format.formatter ->
-  (Sc_rollup_repr.State_hash.t option * Sc_rollup_tick_repr.t) list ->
-  unit
 
 (** Return the other player *)
 val opponent : player -> player
