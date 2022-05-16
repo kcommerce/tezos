@@ -84,10 +84,10 @@ module Simple = struct
       ("number_of_messages", Sc_rollup.Number_of_messages.encoding)
       ("number_of_ticks", Sc_rollup.Number_of_ticks.encoding)
 
-  let commitment_published =
+  let publish_commitment_successful =
     declare_5
       ~section
-      ~name:"sc_rollup_node_commitment_published"
+      ~name:"sc_rollup_node_publish_commitment_successful"
       ~msg:
         "Commitment was published - predecessor: {predecessor}, inbox_level: \
          {inbox_level}, compressed_state: {compressed_state}, \
@@ -100,10 +100,10 @@ module Simple = struct
       ("number_of_messages", Sc_rollup.Number_of_messages.encoding)
       ("number_of_ticks", Sc_rollup.Number_of_ticks.encoding)
 
-  let commitment_skipped =
+  let publish_commitment_skipped =
     declare_5
       ~section
-      ~name:"sc_rollup_node_commitment_skipped"
+      ~name:"sc_rollup_node_publish_commitment_skipped"
       ~msg:
         "Publishing commitment was skipped - predecessor: {predecessor}, \
          inbox_level: {inbox_level}, compressed_state: {compressed_state}, \
@@ -116,10 +116,10 @@ module Simple = struct
       ("number_of_messages", Sc_rollup.Number_of_messages.encoding)
       ("number_of_ticks", Sc_rollup.Number_of_ticks.encoding)
 
-  let commitment_backtracked =
+  let publish_commitment_backtracked =
     declare_5
       ~section
-      ~name:"sc_rollup_node_commitment_backtracked"
+      ~name:"sc_rollup_node_publish_commitment_backtracked"
       ~msg:
         "Publishing commitment was backtracked - predecessor: {predecessor}, \
          inbox_level: {inbox_level}, compressed_state: {compressed_state}, \
@@ -132,12 +132,76 @@ module Simple = struct
       ("number_of_messages", Sc_rollup.Number_of_messages.encoding)
       ("number_of_ticks", Sc_rollup.Number_of_ticks.encoding)
 
-  let commitment_failed =
+  let publish_commitment_failed =
     declare_5
       ~section
-      ~name:"sc_rollup_node_commitment_failed"
+      ~name:"sc_rollup_node_publish_commitment_failed"
       ~msg:
         "Publishing commitment has failed - predecessor: {predecessor}, \
+         inbox_level: {inbox_level}, compressed_state: {compressed_state}, \
+         number_of_messages: {number_of_messages}, number_of_ticks: \
+         {number_of_ticks}"
+      ~level:Notice
+      ("predecessor", Sc_rollup.Commitment_hash.encoding)
+      ("inbox_level", Raw_level.encoding)
+      ("compressed_state", Sc_rollup.State_hash.encoding)
+      ("number_of_messages", Sc_rollup.Number_of_messages.encoding)
+      ("number_of_ticks", Sc_rollup.Number_of_ticks.encoding)
+
+  let cement_commitment_successful =
+    declare_5
+      ~section
+      ~name:"sc_rollup_node_cement_commitment_successful"
+      ~msg:
+        "Commitment was cemented - predecessor: {predecessor}, inbox_level: \
+         {inbox_level}, compressed_state: {compressed_state}, \
+         number_of_messages: {number_of_messages}, number_of_ticks: \
+         {number_of_ticks}"
+      ~level:Notice
+      ("predecessor", Sc_rollup.Commitment_hash.encoding)
+      ("inbox_level", Raw_level.encoding)
+      ("compressed_state", Sc_rollup.State_hash.encoding)
+      ("number_of_messages", Sc_rollup.Number_of_messages.encoding)
+      ("number_of_ticks", Sc_rollup.Number_of_ticks.encoding)
+
+  let cement_commitment_skipped =
+    declare_5
+      ~section
+      ~name:"sc_rollup_node_cement_commitment_skipped"
+      ~msg:
+        "Cementing commitment was skipped - predecessor: {predecessor}, \
+         inbox_level: {inbox_level}, compressed_state: {compressed_state}, \
+         number_of_messages: {number_of_messages}, number_of_ticks: \
+         {number_of_ticks}"
+      ~level:Notice
+      ("predecessor", Sc_rollup.Commitment_hash.encoding)
+      ("inbox_level", Raw_level.encoding)
+      ("compressed_state", Sc_rollup.State_hash.encoding)
+      ("number_of_messages", Sc_rollup.Number_of_messages.encoding)
+      ("number_of_ticks", Sc_rollup.Number_of_ticks.encoding)
+
+  let cement_commitment_backtracked =
+    declare_5
+      ~section
+      ~name:"sc_rollup_node_cement_commitment_backtracked"
+      ~msg:
+        "Cementing commitment was backtracked - predecessor: {predecessor}, \
+         inbox_level: {inbox_level}, compressed_state: {compressed_state}, \
+         number_of_messages: {number_of_messages}, number_of_ticks: \
+         {number_of_ticks}"
+      ~level:Notice
+      ("predecessor", Sc_rollup.Commitment_hash.encoding)
+      ("inbox_level", Raw_level.encoding)
+      ("compressed_state", Sc_rollup.State_hash.encoding)
+      ("number_of_messages", Sc_rollup.Number_of_messages.encoding)
+      ("number_of_ticks", Sc_rollup.Number_of_ticks.encoding)
+
+  let cement_commitment_failed =
+    declare_5
+      ~section
+      ~name:"sc_rollup_node_cement_commitment_failed"
+      ~msg:
+        "Cementing commitment has failed - predecessor: {predecessor}, \
          inbox_level: {inbox_level}, compressed_state: {compressed_state}, \
          number_of_messages: {number_of_messages}, number_of_ticks: \
          {number_of_ticks}"
@@ -226,7 +290,7 @@ let commitment_will_not_be_published lcc_level
         number_of_messages,
         number_of_ticks ))
 
-let commitment_published
+let publish_commitment_successful
     {
       predecessor;
       inbox_level;
@@ -236,14 +300,14 @@ let commitment_published
     } =
   Simple.(
     emit
-      commitment_published
+      publish_commitment_successful
       ( predecessor,
         inbox_level,
         compressed_state,
         number_of_messages,
         number_of_ticks ))
 
-let commitment_skipped
+let publish_commitment_skipped
     {
       predecessor;
       inbox_level;
@@ -253,14 +317,14 @@ let commitment_skipped
     } =
   Simple.(
     emit
-      commitment_skipped
+      publish_commitment_skipped
       ( predecessor,
         inbox_level,
         compressed_state,
         number_of_messages,
         number_of_ticks ))
 
-let commitment_backtracked
+let publish_commitment_backtracked
     {
       predecessor;
       inbox_level;
@@ -270,14 +334,14 @@ let commitment_backtracked
     } =
   Simple.(
     emit
-      commitment_backtracked
+      publish_commitment_backtracked
       ( predecessor,
         inbox_level,
         compressed_state,
         number_of_messages,
         number_of_ticks ))
 
-let commitment_failed
+let publish_commitment_failed
     {
       predecessor;
       inbox_level;
@@ -287,7 +351,75 @@ let commitment_failed
     } =
   Simple.(
     emit
-      commitment_failed
+      publish_commitment_failed
+      ( predecessor,
+        inbox_level,
+        compressed_state,
+        number_of_messages,
+        number_of_ticks ))
+
+let cement_commitment_successful
+    {
+      predecessor;
+      inbox_level;
+      compressed_state;
+      number_of_messages;
+      number_of_ticks;
+    } =
+  Simple.(
+    emit
+      cement_commitment_successful
+      ( predecessor,
+        inbox_level,
+        compressed_state,
+        number_of_messages,
+        number_of_ticks ))
+
+let cement_commitment_skipped
+    {
+      predecessor;
+      inbox_level;
+      compressed_state;
+      number_of_messages;
+      number_of_ticks;
+    } =
+  Simple.(
+    emit
+      cement_commitment_skipped
+      ( predecessor,
+        inbox_level,
+        compressed_state,
+        number_of_messages,
+        number_of_ticks ))
+
+let cement_commitment_backtracked
+    {
+      predecessor;
+      inbox_level;
+      compressed_state;
+      number_of_messages;
+      number_of_ticks;
+    } =
+  Simple.(
+    emit
+      cement_commitment_backtracked
+      ( predecessor,
+        inbox_level,
+        compressed_state,
+        number_of_messages,
+        number_of_ticks ))
+
+let cement_commitment_failed
+    {
+      predecessor;
+      inbox_level;
+      compressed_state;
+      number_of_messages;
+      number_of_ticks;
+    } =
+  Simple.(
+    emit
+      cement_commitment_failed
       ( predecessor,
         inbox_level,
         compressed_state,
