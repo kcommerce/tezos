@@ -58,6 +58,8 @@ This sequence of operations was run:
          level = 3
          current messages hash  = CoWDiSAENzUzRKbCvzj4JS9BJYzNf7dtmYeNeUr9gG9xS4huQ1bS
          nb_available_messages = 205
+         nb_messages_in_commitment_period = 205
+         starting_level_of_current_commitment_period = 2
          message_counter = 205
          old_levels_messages = 
        content = CoUkdBQ53N7FWav8LuTvrcp3jyoxnpqk3xnEo3gSCgNwia4fq44j
@@ -95,6 +97,8 @@ This sequence of operations was run:
          level = 4
          current messages hash  = CoWDiSAENzUzRKbCvzj4JS9BJYzNf7dtmYeNeUr9gG9xS4huQ1bS
          nb_available_messages = 410
+         nb_messages_in_commitment_period = 410
+         starting_level_of_current_commitment_period = 2
          message_counter = 205
          old_levels_messages = 
        content = CoWDiSAENzUzRKbCvzj4JS9BJYzNf7dtmYeNeUr9gG9xS4huQ1bS
@@ -133,6 +137,8 @@ This sequence of operations was run:
          level = 5
          current messages hash  = CoWDiSAENzUzRKbCvzj4JS9BJYzNf7dtmYeNeUr9gG9xS4huQ1bS
          nb_available_messages = 615
+         nb_messages_in_commitment_period = 615
+         starting_level_of_current_commitment_period = 2
          message_counter = 205
          old_levels_messages = 
        content = CoWDiSAENzUzRKbCvzj4JS9BJYzNf7dtmYeNeUr9gG9xS4huQ1bS
@@ -171,6 +177,8 @@ This sequence of operations was run:
          level = 6
          current messages hash  = CoWDiSAENzUzRKbCvzj4JS9BJYzNf7dtmYeNeUr9gG9xS4huQ1bS
          nb_available_messages = 820
+         nb_messages_in_commitment_period = 820
+         starting_level_of_current_commitment_period = 2
          message_counter = 205
          old_levels_messages = 
        content = CoWDiSAENzUzRKbCvzj4JS9BJYzNf7dtmYeNeUr9gG9xS4huQ1bS
@@ -210,6 +218,8 @@ This sequence of operations was run:
          level = 7
          current messages hash  = CoWDiSAENzUzRKbCvzj4JS9BJYzNf7dtmYeNeUr9gG9xS4huQ1bS
          nb_available_messages = 1025
+         nb_messages_in_commitment_period = 1025
+         starting_level_of_current_commitment_period = 2
          message_counter = 205
          old_levels_messages = 
        content = CoWDiSAENzUzRKbCvzj4JS9BJYzNf7dtmYeNeUr9gG9xS4huQ1bS
@@ -249,6 +259,8 @@ This sequence of operations was run:
          level = 8
          current messages hash  = CoWDiSAENzUzRKbCvzj4JS9BJYzNf7dtmYeNeUr9gG9xS4huQ1bS
          nb_available_messages = 1230
+         nb_messages_in_commitment_period = 1230
+         starting_level_of_current_commitment_period = 2
          message_counter = 205
          old_levels_messages = 
        content = CoWDiSAENzUzRKbCvzj4JS9BJYzNf7dtmYeNeUr9gG9xS4huQ1bS
@@ -288,6 +300,8 @@ This sequence of operations was run:
          level = 9
          current messages hash  = CoWDiSAENzUzRKbCvzj4JS9BJYzNf7dtmYeNeUr9gG9xS4huQ1bS
          nb_available_messages = 1435
+         nb_messages_in_commitment_period = 1435
+         starting_level_of_current_commitment_period = 2
          message_counter = 205
          old_levels_messages = 
        content = CoWDiSAENzUzRKbCvzj4JS9BJYzNf7dtmYeNeUr9gG9xS4huQ1bS
@@ -327,6 +341,8 @@ This sequence of operations was run:
          level = 10
          current messages hash  = CoWDiSAENzUzRKbCvzj4JS9BJYzNf7dtmYeNeUr9gG9xS4huQ1bS
          nb_available_messages = 1640
+         nb_messages_in_commitment_period = 1640
+         starting_level_of_current_commitment_period = 2
          message_counter = 205
          old_levels_messages = 
        content = CoWDiSAENzUzRKbCvzj4JS9BJYzNf7dtmYeNeUr9gG9xS4huQ1bS
@@ -367,6 +383,8 @@ This sequence of operations was run:
          level = 11
          current messages hash  = CoWDiSAENzUzRKbCvzj4JS9BJYzNf7dtmYeNeUr9gG9xS4huQ1bS
          nb_available_messages = 1845
+         nb_messages_in_commitment_period = 1845
+         starting_level_of_current_commitment_period = 2
          message_counter = 205
          old_levels_messages = 
        content = CoWDiSAENzUzRKbCvzj4JS9BJYzNf7dtmYeNeUr9gG9xS4huQ1bS
@@ -407,6 +425,8 @@ This sequence of operations was run:
          level = 12
          current messages hash  = CoWDiSAENzUzRKbCvzj4JS9BJYzNf7dtmYeNeUr9gG9xS4huQ1bS
          nb_available_messages = 2050
+         nb_messages_in_commitment_period = 2050
+         starting_level_of_current_commitment_period = 2
          message_counter = 205
          old_levels_messages = 
        content = CoWDiSAENzUzRKbCvzj4JS9BJYzNf7dtmYeNeUr9gG9xS4huQ1bS
@@ -447,6 +467,8 @@ This sequence of operations was run:
          level = 13
          current messages hash  = CoWDiSAENzUzRKbCvzj4JS9BJYzNf7dtmYeNeUr9gG9xS4huQ1bS
          nb_available_messages = 2255
+         nb_messages_in_commitment_period = 2255
+         starting_level_of_current_commitment_period = 2
          message_counter = 205
          old_levels_messages = 
        content = CoWDiSAENzUzRKbCvzj4JS9BJYzNf7dtmYeNeUr9gG9xS4huQ1bS
@@ -487,6 +509,8 @@ This sequence of operations was run:
          level = 14
          current messages hash  = CoWDiSAENzUzRKbCvzj4JS9BJYzNf7dtmYeNeUr9gG9xS4huQ1bS
          nb_available_messages = 2460
+         nb_messages_in_commitment_period = 2460
+         starting_level_of_current_commitment_period = 2
          message_counter = 205
          old_levels_messages = 
        content = CoWDiSAENzUzRKbCvzj4JS9BJYzNf7dtmYeNeUr9gG9xS4huQ1bS
@@ -527,6 +551,8 @@ This sequence of operations was run:
          level = 15
          current messages hash  = CoWDiSAENzUzRKbCvzj4JS9BJYzNf7dtmYeNeUr9gG9xS4huQ1bS
          nb_available_messages = 2665
+         nb_messages_in_commitment_period = 2665
+         starting_level_of_current_commitment_period = 2
          message_counter = 205
          old_levels_messages = 
        content = CoWDiSAENzUzRKbCvzj4JS9BJYzNf7dtmYeNeUr9gG9xS4huQ1bS
@@ -567,6 +593,8 @@ This sequence of operations was run:
          level = 16
          current messages hash  = CoWDiSAENzUzRKbCvzj4JS9BJYzNf7dtmYeNeUr9gG9xS4huQ1bS
          nb_available_messages = 2870
+         nb_messages_in_commitment_period = 2870
+         starting_level_of_current_commitment_period = 2
          message_counter = 205
          old_levels_messages = 
        content = CoWDiSAENzUzRKbCvzj4JS9BJYzNf7dtmYeNeUr9gG9xS4huQ1bS
@@ -607,6 +635,8 @@ This sequence of operations was run:
          level = 17
          current messages hash  = CoWDiSAENzUzRKbCvzj4JS9BJYzNf7dtmYeNeUr9gG9xS4huQ1bS
          nb_available_messages = 3075
+         nb_messages_in_commitment_period = 3075
+         starting_level_of_current_commitment_period = 2
          message_counter = 205
          old_levels_messages = 
        content = CoWDiSAENzUzRKbCvzj4JS9BJYzNf7dtmYeNeUr9gG9xS4huQ1bS
@@ -647,6 +677,8 @@ This sequence of operations was run:
          level = 18
          current messages hash  = CoWDiSAENzUzRKbCvzj4JS9BJYzNf7dtmYeNeUr9gG9xS4huQ1bS
          nb_available_messages = 3280
+         nb_messages_in_commitment_period = 3280
+         starting_level_of_current_commitment_period = 2
          message_counter = 205
          old_levels_messages = 
        content = CoWDiSAENzUzRKbCvzj4JS9BJYzNf7dtmYeNeUr9gG9xS4huQ1bS
@@ -688,6 +720,8 @@ This sequence of operations was run:
          level = 19
          current messages hash  = CoWDiSAENzUzRKbCvzj4JS9BJYzNf7dtmYeNeUr9gG9xS4huQ1bS
          nb_available_messages = 3485
+         nb_messages_in_commitment_period = 3485
+         starting_level_of_current_commitment_period = 2
          message_counter = 205
          old_levels_messages = 
        content = CoWDiSAENzUzRKbCvzj4JS9BJYzNf7dtmYeNeUr9gG9xS4huQ1bS
@@ -729,6 +763,8 @@ This sequence of operations was run:
          level = 20
          current messages hash  = CoWDiSAENzUzRKbCvzj4JS9BJYzNf7dtmYeNeUr9gG9xS4huQ1bS
          nb_available_messages = 3690
+         nb_messages_in_commitment_period = 3690
+         starting_level_of_current_commitment_period = 2
          message_counter = 205
          old_levels_messages = 
        content = CoWDiSAENzUzRKbCvzj4JS9BJYzNf7dtmYeNeUr9gG9xS4huQ1bS
@@ -770,6 +806,8 @@ This sequence of operations was run:
          level = 21
          current messages hash  = CoWDiSAENzUzRKbCvzj4JS9BJYzNf7dtmYeNeUr9gG9xS4huQ1bS
          nb_available_messages = 3895
+         nb_messages_in_commitment_period = 3895
+         starting_level_of_current_commitment_period = 2
          message_counter = 205
          old_levels_messages = 
        content = CoWDiSAENzUzRKbCvzj4JS9BJYzNf7dtmYeNeUr9gG9xS4huQ1bS
@@ -797,7 +835,6 @@ This simulation failed:
 
 Error:
   { "id":
-    "proto.alpha.Sc_rollup_max_number_of_available_messages_reached_for_commitment_period",
-  "description":
-    "Maximum number of available messages reached for commitment period",
+    "proto.alpha.Sc_rollup_max_number_of_messages_reached_for_commitment_period",
+  "description": "Maximum number of messages reached for commitment period",
   "data": {} }

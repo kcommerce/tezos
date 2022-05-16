@@ -61,6 +61,8 @@ This sequence of operations was run:
          level = 3
          current messages hash  = CoWa8bU1F5LUoL6URwdZbNFvmLhFGNvdJHkNkPJLjEZKF6EwtMVr
          nb_available_messages = 1
+         nb_messages_in_commitment_period = 1
+         starting_level_of_current_commitment_period = 2
          message_counter = 1
          old_levels_messages = 
        content = CoUkdBQ53N7FWav8LuTvrcp3jyoxnpqk3xnEo3gSCgNwia4fq44j
@@ -134,6 +136,8 @@ This sequence of operations was run:
          level = 5
          current messages hash  = CoWa8bU1F5LUoL6URwdZbNFvmLhFGNvdJHkNkPJLjEZKF6EwtMVr
          nb_available_messages = 1
+         nb_messages_in_commitment_period = 1
+         starting_level_of_current_commitment_period = 4
          message_counter = 1
          old_levels_messages = 
        content = CoUkdBQ53N7FWav8LuTvrcp3jyoxnpqk3xnEo3gSCgNwia4fq44j
