@@ -169,7 +169,9 @@ module Make (PVM : Pvm.S) : S with module PVM = PVM = struct
             (module Store.Last_stored_commitment_level)
             store
         in
-        return commitment_with_hash)
+        return
+          (commitment_with_hash
+          |> Option.map (fun (commitment, hash) -> (commitment, hash, None))))
 
   let register_last_published_commitment store dir =
     RPC_directory.register0
@@ -189,7 +191,7 @@ module Make (PVM : Pvm.S) : S with module PVM = PVM = struct
             let*! published_at_level =
               Store.Commitments_published_at_level.get store hash
             in
-            return @@ Some (commitment, hash, published_at_level)
+            return @@ Some (commitment, hash, Some published_at_level)
         | None -> return None)
 
   let register_current_status store dir =
