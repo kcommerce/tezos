@@ -27,18 +27,12 @@ open Tezos_rpc
 open Protocol
 open Alpha_context
 
-let commitment_with_hash_encoding =
-  Data_encoding.(
-    obj2
-      (req "commitment" Sc_rollup.Commitment.encoding)
-      (req "hash" Sc_rollup.Commitment_hash.encoding))
-
 let commitment_with_hash_and_level_encoding =
   Data_encoding.(
     obj3
       (req "commitment" Sc_rollup.Commitment.encoding)
       (req "hash" Sc_rollup.Commitment_hash.encoding)
-      (req "level" Raw_level.encoding))
+      (opt "published_at_level" Raw_level.encoding))
 
 let sc_rollup_address () =
   RPC_service.get_service
@@ -100,7 +94,7 @@ let last_stored_commitment () =
   RPC_service.get_service
     ~description:"Last commitment computed by the node"
     ~query:RPC_query.empty
-    ~output:(Data_encoding.option commitment_with_hash_encoding)
+    ~output:(Data_encoding.option commitment_with_hash_and_level_encoding)
     RPC_path.(open_root / "last_stored_commitment")
 
 let last_published_commitment () =

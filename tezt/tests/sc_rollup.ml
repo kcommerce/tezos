@@ -142,13 +142,15 @@ let test_scenario ?commitment_frequency ?challenge_window
         node
         client)
 
-let inbox_level (_, (commitment : Sc_rollup_client.commitment)) =
+let inbox_level (_hash, (commitment : Sc_rollup_client.commitment), _level) =
   commitment.inbox_level
 
-let number_of_messages (_, (commitment : Sc_rollup_client.commitment)) =
+let number_of_messages
+    (_hash, (commitment : Sc_rollup_client.commitment), _level) =
   commitment.number_of_messages
 
-let number_of_ticks (_, (commitment : Sc_rollup_client.commitment)) =
+let number_of_ticks (_hash, (commitment : Sc_rollup_client.commitment), _level)
+    =
   commitment.number_of_ticks
 
 let last_cemented_commitment_hash_with_level json =
@@ -156,9 +158,12 @@ let last_cemented_commitment_hash_with_level json =
   let level = JSON.(json |-> "level" |> as_int) in
   (hash, level)
 
-let hash (hash, (_ : Sc_rollup_client.commitment)) = hash
+let hash (hash, (_ : Sc_rollup_client.commitment), _level) = hash
 
-let predecessor (_hash, {Sc_rollup_client.predecessor; _}) = predecessor
+let first_published_at_level (_hash, (_ : Sc_rollup_client.commitment), level) =
+  level
+
+let predecessor (_hash, {Sc_rollup_client.predecessor; _}, _level) = predecessor
 
 let cement_commitment client ~sc_rollup_address ~hash =
   let* () =
@@ -990,11 +995,11 @@ let check_published_commitment_in_l1 ?(force_new_level = true) sc_rollup_address
   let* commitment_in_l1 =
     match published_commitment with
     | None -> Lwt.return_none
-    | Some (hash, _) ->
+    | Some (hash, _commitment, _level) ->
         tezos_client_get_commitment client sc_rollup_address hash
   in
   Option.iter (fun (c1, c2) -> check_eq_commitment c1 c2)
-  @@ Option.bind published_commitment (fun (_, c1) ->
+  @@ Option.bind published_commitment (fun (_, c1, _level) ->
          Option.map (fun c2 -> (c1, c2)) commitment_in_l1) ;
   Lwt.return_unit
 
@@ -1079,8 +1084,8 @@ let commitment_stored _protocol sc_rollup_node sc_rollup_address _node client =
     Sc_rollup_client.last_published_commitment ~hooks sc_rollup_client
   in
   Option.iter (fun (c1, c2) -> check_eq_commitment c1 c2)
-  @@ Option.bind published_commitment (fun (_, c1) ->
-         Option.map (fun (_, c2) -> (c1, c2)) stored_commitment) ;
+  @@ Option.bind published_commitment (fun (_hash, c1, _level) ->
+         Option.map (fun (_, c2, _level) -> (c1, c2)) stored_commitment) ;
   check_published_commitment_in_l1 sc_rollup_address client published_commitment
 
 let commitment_not_stored_if_non_final _protocol sc_rollup_node
@@ -1213,8 +1218,8 @@ let commitments_messages_reset _protocol sc_rollup_node sc_rollup_address _node
     Sc_rollup_client.last_published_commitment ~hooks sc_rollup_client
   in
   Option.iter (fun (c1, c2) -> check_eq_commitment c1 c2)
-  @@ Option.bind published_commitment (fun (_, c1) ->
-         Option.map (fun (_, c2) -> (c1, c2)) stored_commitment) ;
+  @@ Option.bind published_commitment (fun (_hash, c1, _level) ->
+         Option.map (fun (_hash, c2, _level) -> (c1, c2)) stored_commitment) ;
   check_published_commitment_in_l1 sc_rollup_address client published_commitment
 
 let commitments_reorgs protocol sc_rollup_node sc_rollup_address node client =
@@ -1336,8 +1341,8 @@ let commitments_reorgs protocol sc_rollup_node sc_rollup_address node client =
     Sc_rollup_client.last_published_commitment ~hooks sc_rollup_client
   in
   Option.iter (fun (c1, c2) -> check_eq_commitment c1 c2)
-  @@ Option.bind published_commitment (fun (_, c1) ->
-         Option.map (fun (_, c2) -> (c1, c2)) stored_commitment) ;
+  @@ Option.bind published_commitment (fun (_hash, c1, _level) ->
+         Option.map (fun (_hash, c2, _level) -> (c1, c2)) stored_commitment) ;
   check_published_commitment_in_l1 sc_rollup_address client published_commitment
 
 (* FIXME: https://gitlab.com/tezos/tezos/-/issues/2942
