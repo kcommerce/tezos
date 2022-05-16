@@ -74,6 +74,12 @@ let sc_rollup_commitment_frequency =
     Default_parameters.constants_mainnet
       .sc_rollup_commitment_frequency_in_blocks
 
+let sc_rollup_challenge_window =
+  (* FIXME: https://gitlab.com/tezos/tezos/-/issues/2977
+     Use effective on-chain protocol parameter. *)
+  Int32.of_int
+    Default_parameters.constants_mainnet.sc_rollup_challenge_window_in_blocks
+
 let last_commitment_level (module Last_commitment_level : Mutable_level_store)
     store =
   Last_commitment_level.find store
@@ -139,44 +145,17 @@ let update_last_stored_commitment store (commitment : Sc_rollup.Commitment.t) =
 module type S = sig
   module PVM : Pvm.S
 
-  (** [process_head node_ctxt store head] checks whether a new
-      commitment needs to be computed and stored, by looking at the level of
-      [head] and checking whether it is a multiple of 20 levels away from
-      [node_ctxt.initial_level]. It uses the functionalities of [PVM] to
-      compute the hash of to be included in the commitment.
-  *)
-
   val process_head :
     Node_context.t -> Store.t -> Layer1.head -> unit tzresult Lwt.t
 
-  (** [get_last_cemented_commitment_hash_with_level node_ctxt store] 
-      fetches and stores information about the last cemented commitment 
-      in the layer1 chain.
-    *)
   val get_last_cemented_commitment_hash_with_level :
     Node_context.t -> Store.t -> unit tzresult Lwt.t
 
-  (** [publish_commitment node_ctxt store] publishes the earliest commitment
-      stored in [store] that has not been published yet, unless its inbox level
-      is below or equal to the inbox level of the last cemented commitment in
-      the layer1 chain. In this case, the rollup node checks whether it has
-      computed a commitment whose inbox level is
-      [sc_rollup_commitment_frequency] levels after the inbox level of the last
-      cemented commitment: 
-      {ul
-      {li if the commitment is found and its predecessor hash coincides with
-       the hash of the LCC, the rollup node will try to publish that commitment
-      instead; }
-      {li if the commitment is found but its predecessor hash differs from the
-        hash of the LCC, the rollup node will stop its execution;}
-      {li if no commitment is found, no action is taken by the rollup node;
-        in particular, no commitment is published.}
-    }
-  *)
   val publish_commitment : Node_context.t -> Store.t -> unit tzresult Lwt.t
 
-  (** [start ()] only emits the event that the commitment manager
-      for the rollup node has started. *)
+  val cement_commitment_if_possible :
+    Node_context.t -> Store.t -> unit tzresult Lwt.t
+
   val start : unit -> unit Lwt.t
 end
 
@@ -371,6 +350,10 @@ module Make (PVM : Pvm.S) : S with module PVM = PVM = struct
       else (false, next_publishable_level)
     in
     get_commitment_and_publish node_ctxt level_to_publish store ~check_lcc_hash
+
+  let cement_commitment_if_possible node_ctxt store =
+    let open Lwt_result_syntax in
+    return ()
 
   let start () = Commitment_event.starting ()
 end
