@@ -668,7 +668,12 @@ let handle_l1_operation direction (block : Alpha_block_services.block_info)
   let handle_op =
     match direction with `Rollback -> rollback_op | `Process -> process_op
   in
-  let rec handle :
+  let handle_internal_op ~source:_ acc
+      (Internal_manager_operation_result ({operation; _}, result)) =
+    match (operation, result) with
+    | (Transaction _ | Delegation _ | Origination _), _ -> acc
+  in
+  let handle :
       type kind.
       source:public_key_hash ->
       kind manager_operation ->
@@ -677,16 +682,11 @@ let handle_l1_operation direction (block : Alpha_block_services.block_info)
       'acc ->
       'acc tzresult Lwt.t =
    fun ~source op result internal_operation_results acc ->
-    let* acc =
+    let+ acc =
       handle_op state ~source block.hash operation.hash op result acc
     in
     (* Add messages from internal operations *)
-    List.fold_left_es
-      (fun acc (Internal_manager_operation_result ({operation; _}, result)) ->
-        let operation = manager_operation_of_internal_operation operation in
-        handle ~source operation result [] acc)
-      acc
-      internal_operation_results
+    List.fold_left (handle_internal_op ~source) acc internal_operation_results
   in
   let rec handle_list :
       type kind. 'acc -> kind contents_and_result_list -> 'acc tzresult Lwt.t =
