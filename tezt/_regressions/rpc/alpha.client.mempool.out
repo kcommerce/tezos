@@ -3317,9 +3317,13 @@ curl -s 'http://localhost:[PORT]/describe/chains/main/mempool?recurse=yes'
                                   "choice"
                                 ],
                                 "additionalProperties": false
+                              },
+                              "opening_move": {
+                                "type": "boolean"
                               }
                             },
                             "required": [
+                              "opening_move",
                               "refutation",
                               "opponent",
                               "rollup",
@@ -6517,6 +6521,17 @@ curl -s 'http://localhost:[PORT]/describe/chains/main/mempool?recurse=yes'
                                   },
                                   "data_kind": {
                                     "kind": "Dynamic"
+                                  },
+                                  "kind": "named"
+                                },
+                                {
+                                  "name": "opening_move",
+                                  "layout": {
+                                    "kind": "Bool"
+                                  },
+                                  "data_kind": {
+                                    "size": 1,
+                                    "kind": "Float"
                                   },
                                   "kind": "named"
                                 }
@@ -13600,9 +13615,13 @@ curl -s 'http://localhost:[PORT]/describe/chains/main/mempool?recurse=yes'
                                   "choice"
                                 ],
                                 "additionalProperties": false
+                              },
+                              "opening_move": {
+                                "type": "boolean"
                               }
                             },
                             "required": [
+                              "opening_move",
                               "refutation",
                               "opponent",
                               "rollup",

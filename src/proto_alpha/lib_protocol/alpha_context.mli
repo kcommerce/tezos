@@ -2703,6 +2703,7 @@ module Sc_rollup : sig
     t ->
     refuter:Staker.t ->
     defender:Staker.t ->
+    bool ->
     (Game.t * context) tzresult Lwt.t
 
   val update_game :
@@ -2711,6 +2712,7 @@ module Sc_rollup : sig
     player:Staker.t ->
     opponent:Staker.t ->
     Game.refutation ->
+    bool ->
     (Game.outcome option * context) tzresult Lwt.t
 
   val timeout :
@@ -3138,6 +3140,7 @@ and _ manager_operation =
       rollup : Sc_rollup.t;
       opponent : Sc_rollup.Staker.t;
       refutation : Sc_rollup.Game.refutation;
+      opening_move : bool;
     }
       -> Kind.sc_rollup_refute manager_operation
   | Sc_rollup_timeout : {

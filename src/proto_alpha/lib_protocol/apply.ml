@@ -1754,8 +1754,14 @@ let apply_external_manager_operation_content :
       let consumed_gas = Gas.consumed ~since:before_operation ~until:ctxt in
       let result = Sc_rollup_publish_result {staked_hash; consumed_gas} in
       return (ctxt, result, [])
-  | Sc_rollup_refute {rollup; opponent; refutation} ->
-      Sc_rollup.update_game ctxt rollup ~player:source ~opponent refutation
+  | Sc_rollup_refute {rollup; opponent; refutation; opening_move} ->
+      Sc_rollup.update_game
+        ctxt
+        rollup
+        ~player:source
+        ~opponent
+        refutation
+        opening_move
       >>=? fun (outcome, ctxt) ->
       (match outcome with
       | None -> return (Sc_rollup.Game.Ongoing, ctxt)

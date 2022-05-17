@@ -26,6 +26,8 @@
 
 type error +=
   | (* `Temporary *) Sc_rollup_already_staked
+  | (* `Temporary *) Sc_rollup_game_already_started
+  | (* `Temporary *) Sc_rollup_game_does_not_exist
   | (* `Temporary *) Sc_rollup_disputed
   | (* `Temporary *) Sc_rollup_does_not_exist of Sc_rollup_repr.t
   | (* `Temporary *) Sc_rollup_no_conflict
@@ -100,6 +102,30 @@ let () =
     Data_encoding.empty
     (function Sc_rollup_already_staked -> Some () | _ -> None)
     (fun () -> Sc_rollup_already_staked) ;
+  let description =
+    "Game started already, must play with opening_move = false."
+  in
+  register_error_kind
+    `Temporary
+    ~id:"Sc_rollup_game_already_started"
+    ~title:"Game already started"
+    ~description
+    ~pp:(fun ppf () -> Format.fprintf ppf "%s" description)
+    Data_encoding.empty
+    (function Sc_rollup_game_already_started -> Some () | _ -> None)
+    (fun () -> Sc_rollup_game_already_started) ;
+  let description =
+    "Game does not exist, must play with opening_move = true."
+  in
+  register_error_kind
+    `Temporary
+    ~id:"Sc_rollup_game_does_not_exist"
+    ~title:"Game does not exist"
+    ~description
+    ~pp:(fun ppf () -> Format.fprintf ppf "%s" description)
+    Data_encoding.empty
+    (function Sc_rollup_game_does_not_exist -> Some () | _ -> None)
+    (fun () -> Sc_rollup_game_does_not_exist) ;
   let description = "Attempted to cement a disputed commitment." in
   register_error_kind
     `Temporary
@@ -828,13 +854,15 @@ let timeout_level ctxt =
   let level = Raw_context.current_level ctxt in
   Raw_level_repr.add level.level timeout_period_in_blocks
 
-let get_or_init_game ctxt rollup ~refuter ~defender =
+let get_or_init_game ctxt rollup ~refuter ~defender init =
   let open Lwt_tzresult_syntax in
   let stakers = Sc_rollup_game_repr.Index.normalize (refuter, defender) in
   let* ctxt, game = Store.Game.find (ctxt, rollup) stakers in
-  match game with
-  | Some g -> return (g, ctxt)
-  | None ->
+  match (init, game) with
+  | false, Some g -> return (g, ctxt)
+  | true, Some _ -> fail Sc_rollup_game_already_started
+  | false, None -> fail Sc_rollup_game_does_not_exist
+  | true, None ->
       let* ctxt, opp_1 = Store.Opponent.find (ctxt, rollup) refuter in
       let* ctxt, opp_2 = Store.Opponent.find (ctxt, rollup) defender in
       let* _ =
@@ -860,11 +888,11 @@ let get_or_init_game ctxt rollup ~refuter ~defender =
       return (game, ctxt)
 
 (* TODO: #2926 this requires carbonation *)
-let update_game ctxt rollup ~player ~opponent refutation =
+let update_game ctxt rollup ~player ~opponent refutation opening_move =
   let open Lwt_tzresult_syntax in
   let alice, bob = Sc_rollup_game_repr.Index.normalize (player, opponent) in
   let* game, ctxt =
-    get_or_init_game ctxt rollup ~refuter:player ~defender:opponent
+    get_or_init_game ctxt rollup ~refuter:player ~defender:opponent opening_move
   in
   let* _ =
     let turn = match game.turn with Alice -> alice | Bob -> bob in

@@ -314,11 +314,11 @@ let pp_manager_operation_content (type kind) source internal pp_result ppf
         rollup
         pp_result
         result
-  | Sc_rollup_refute {rollup; opponent; refutation} ->
+  | Sc_rollup_refute {rollup; opponent; refutation; opening_move} ->
       Format.fprintf
         ppf
         "@[<v 2>Refute staker %a in the smart contract rollup at address %a \
-         using refutation %a%a@]"
+         using refutation %a%a %s@]"
         Sc_rollup.Staker.pp
         opponent
         Sc_rollup.Address.pp
@@ -327,6 +327,7 @@ let pp_manager_operation_content (type kind) source internal pp_result ppf
         refutation
         pp_result
         result
+        (if opening_move then "(opening move of game)" else "")
   | Sc_rollup_timeout {rollup; stakers} ->
       Format.fprintf
         ppf

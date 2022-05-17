@@ -382,6 +382,7 @@ and _ manager_operation =
       rollup : Sc_rollup_repr.t;
       opponent : Sc_rollup_repr.Staker.t;
       refutation : Sc_rollup_game_repr.refutation;
+      opening_move : bool;
     }
       -> Kind.sc_rollup_refute manager_operation
   | Sc_rollup_timeout : {
@@ -990,20 +991,21 @@ module Encoding = struct
           tag = sc_rollup_operation_refute_tag;
           name = "sc_rollup_refute";
           encoding =
-            obj3
+            obj4
               (req "rollup" Sc_rollup_repr.encoding)
               (req "opponent" Sc_rollup_repr.Staker.encoding)
-              (req "refutation" Sc_rollup_game_repr.refutation_encoding);
+              (req "refutation" Sc_rollup_game_repr.refutation_encoding)
+              (req "opening_move" Data_encoding.bool);
           select =
             (function
             | Manager (Sc_rollup_refute _ as op) -> Some op | _ -> None);
           proj =
             (function
-            | Sc_rollup_refute {rollup; opponent; refutation} ->
-                (rollup, opponent, refutation));
+            | Sc_rollup_refute {rollup; opponent; refutation; opening_move} ->
+                (rollup, opponent, refutation, opening_move));
           inj =
-            (fun (rollup, opponent, refutation) ->
-              Sc_rollup_refute {rollup; opponent; refutation});
+            (fun (rollup, opponent, refutation, opening_move) ->
+              Sc_rollup_refute {rollup; opponent; refutation; opening_move});
         }
 
     let[@coq_axiom_with_reason "gadt"] sc_rollup_timeout_case =

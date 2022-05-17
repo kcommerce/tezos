@@ -436,14 +436,16 @@ val last_cemented_commitment_hash_with_level :
   (Sc_rollup_repr.Commitment_hash.t * Raw_level_repr.t * Raw_context.t) tzresult
   Lwt.t
 
-(** [get_or_init_game ctxt rollup refuter defender] returns the current
-    game between the two stakers [refuter] and [defender] if it exists.
+(** [get_or_init_game ctxt rollup refuter defender init] returns the
+    current game between the two stakers [refuter] and [defender] if it
+    exists and [init] is [false].
 
-    If it does not already exist, it creates one with [refuter] as the
-    first player to move. The initial state of the game will be obtained
-    from the commitment pair belonging to [defender] at the conflict
-    point. See [Sc_rollup_game_repr.initial] for documentation on how a
-    pair of commitments is turned into an initial game state.
+    If [init] is [true] and the game does not already exist, it creates
+    one with [refuter] as the first player to move. The initial state of
+    the game will be obtained from the commitment pair belonging to
+    [defender] at the conflict point. See [Sc_rollup_game_repr.initial]
+    for documentation on how a pair of commitments is turned into an
+    initial game state.
 
     This also deals with the other bits of data in the storage around
     the game. It checks neither staker is already in a game (and also
@@ -461,6 +463,10 @@ val last_cemented_commitment_hash_with_level :
     May fail with:
     {ul
       {li [Sc_rollup_does_not_exist] if [rollup] does not exist}
+      {li [Sc_rollup_game_does_not_exist] if [init] is [false] but the
+         game does not exist}
+      {li [Sc_rollup_game_already_started] if [init] is [true] but the
+         game already exists}
       {li [Sc_rollup_no_conflict] if [refuter] is staked on an ancestor of
          the commitment staked on by [defender], or vice versa}
       {li [Sc_rollup_not_staked] if one of the [refuter] or [defender] is
@@ -473,15 +479,17 @@ val get_or_init_game :
   Sc_rollup_repr.t ->
   refuter:Sc_rollup_repr.Staker.t ->
   defender:Sc_rollup_repr.Staker.t ->
+  bool ->
   (Sc_rollup_game_repr.t * Raw_context.t) tzresult Lwt.t
 
-(** [update_game ctxt rollup player opponent refutation] handles the
-    storage-side logic for when one of the players makes a move in the
-    game. It initializes the game if necessary (the first move looks
-    much like any other). It checks that [player] is the player whose
-    turn it is; if so, it applies [refutation] using the [play] function.
+(** [update_game ctxt rollup player opponent refutation opening_move]
+    handles the storage logic for when one of the players makes a move
+    in the game. It initializes the game if [opening_move] is [true].
+    Otherwise, it checks the game already exists. Then it checks that
+    [player] is the player whose turn it is; if so, it applies
+    [refutation] using the [play] function.
 
-    If the result is a new game, this is stored and the timeout level is
+    If the result is a game, this is stored and the timeout level is
     updated.
 
     If the result is an [outcome], this will be returned.
@@ -489,6 +497,10 @@ val get_or_init_game :
     May fail with:
     {ul
       {li [Sc_rollup_does_not_exist] if [rollup] does not exist}
+      {li [Sc_rollup_game_does_not_exist] if [opening_move] is [false]
+         but the game does not exist}
+      {li [Sc_rollup_game_already_started] if [opening_move] is [true]
+         but the game already exists}
       {li [Sc_rollup_no_conflict] if [player] is staked on an ancestor of
          the commitment staked on by [opponent], or vice versa}
       {li [Sc_rollup_not_staked] if one of the [player] or [opponent] is
@@ -504,6 +516,7 @@ val update_game :
   player:Sc_rollup_repr.Staker.t ->
   opponent:Sc_rollup_repr.Staker.t ->
   Sc_rollup_game_repr.refutation ->
+  bool ->
   (Sc_rollup_game_repr.outcome option * Raw_context.t) tzresult Lwt.t
 
 (* TODO: #2902 update reference to timeout period in doc-string *)
