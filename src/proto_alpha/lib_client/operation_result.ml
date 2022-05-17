@@ -1157,7 +1157,3 @@ let pp_internal_operation_result ppf (Apply_results.Internal_contents op) =
     (fun _ppf () -> ())
     ppf
     (operation, ())
-
-let pp_internal_operation ppf (Script_typed_ir.Internal_operation op) =
-  let op = contents_of_internal_operation op in
-  pp_internal_operation_result ppf (Internal_contents op)
