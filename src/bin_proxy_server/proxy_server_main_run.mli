@@ -30,6 +30,7 @@ type args = {
   tls_cert_and_key : (string * string) option;
       (** The paths to the certificate and the key to use for TLS *)
   endpoint : Uri.t;
+      (** The endpoint of the main node, to forward unsupported requests to *)
 }
 
 (** [run dir args] launches a server honoring [dir], configured by [args] *)
