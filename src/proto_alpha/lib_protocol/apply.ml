@@ -1254,8 +1254,7 @@ let apply_external_manager_operation_content :
              {consumed_gas = Gas.consumed ~since:before_operation ~until:ctxt}
             : kind successful_manager_operation_result),
           [] )
-  | Transaction
-      {amount; parameters; destination = Contract contract; entrypoint} ->
+  | Transaction {amount; parameters; destination = contract; entrypoint} ->
       Script.force_decode_in_context
         ~consume_deserialization_gas
         ctxt
@@ -1273,8 +1272,6 @@ let apply_external_manager_operation_content :
         ~chain_id
         ~mode
         ~internal:false
-  | Transaction {destination = Tx_rollup _; _} ->
-      fail Tx_rollup_non_internal_transaction
   | Tx_rollup_dispatch_tickets
       {
         tx_rollup;
@@ -1854,13 +1851,7 @@ let precheck_manager_contents (type kind) ctxt (op : kind Kind.manager contents)
      deserialized before (e.g. when retrieve in JSON format). *)
   (match operation with
   | Reveal pk -> Contract.reveal_manager_key ctxt source pk
-  | Transaction {parameters; destination; _} ->
-      (* Precheck is only called for non-internal operations
-       * and rollup transactions must be internal. *)
-      fail_when
-        (match destination with Tx_rollup _ -> true | _ -> false)
-        Tx_rollup_non_internal_transaction
-      >>=? fun () ->
+  | Transaction {parameters; _} ->
       Lwt.return
       @@ record_trace Gas_quota_exceeded_init_deserialize
       @@ (* Fail early if not enough gas for complete deserialization
