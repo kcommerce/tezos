@@ -2541,11 +2541,19 @@ let tezos_webassembly_interpreter =
   public_lib
     "tezos-webassembly-interpreter"
     ~path:"src/lib_webassembly/interpreter"
+    ~all_modules_except:["main"]
     ~license:"Apache License 2.0"
     ~extra_authors:["WebAssembly Authors"]
     ~synopsis:"WebAssembly reference interpreter with tweaks for Tezos"
-    ~all_modules_except:["main"]
     ~dune:Dune.[[S "include"; S "dune.inc"]]
+
+let _tezos_webassembly_repl =
+  private_exe
+    "main"
+    ~path:"src/lib_webassembly/interpreter"
+    ~modules:["main"]
+    ~opam:""
+    ~deps:[tezos_webassembly_interpreter |> open_]
 
 let _tezos_scoru_wasm =
   public_lib
