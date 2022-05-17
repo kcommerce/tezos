@@ -88,14 +88,8 @@ module Types = struct
     | Some p -> Bootstrap_pipeline.length p
 end
 
-module Logger =
-  Worker_logger.Make (Event) (Request)
-    (struct
-      let worker_name = "node_peer_validator"
-    end)
-
 module Events = Peer_validator_events
-module Worker = Worker.Make (Name) (Event) (Request) (Types) (Logger)
+module Worker = Worker.Make (Name) (Event) (Request) (Types)
 open Types
 
 type t = Worker.dropbox Worker.t

@@ -212,12 +212,6 @@ module type T = sig
   (** Triggers a worker termination. *)
   val trigger_shutdown : _ t -> unit
 
-  (** Record an event in the backlog. *)
-  val record_event : _ t -> Event.t -> unit
-
-  (** Record an event and make sure it is logged. *)
-  val log_event : _ t -> Event.t -> unit Lwt.t
-
   (** Access the internal state, once initialized. *)
   val state : _ t -> Types.state
 
@@ -255,10 +249,7 @@ module Make
     (Name : Worker_intf.NAME)
     (Event : Worker_intf.EVENT)
     (Request : Worker_intf.REQUEST)
-    (Types : Worker_intf.TYPES)
-    (Logger : Worker_intf.LOGGER
-                with module Event = Event
-                 and type Request.view = Request.view) :
+    (Types : Worker_intf.TYPES) :
   T
     with module Name = Name
      and module Event = Event

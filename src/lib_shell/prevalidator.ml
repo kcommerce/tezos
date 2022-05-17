@@ -75,12 +75,6 @@ module Dummy_event = struct
   let level () = Internal_event.Debug
 end
 
-module Logger =
-  Worker_logger.Make (Dummy_event) (Request)
-    (struct
-      let worker_name = "node_prevalidator"
-    end)
-
 module Classification = Prevalidator_classification
 
 (** This module encapsulates pending operations to maintain them in two
@@ -1107,7 +1101,6 @@ module Make
        and type Types.state = Types.state
        and type Types.parameters = Types.parameters =
     Worker.Make (Name) (Dummy_event) (Prevalidator_worker_state.Request) (Types)
-      (Logger)
 
   open Types
 
