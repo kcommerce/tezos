@@ -243,6 +243,23 @@ module type T = sig
   val find_opt : 'a table -> Name.t -> 'a t option
 end
 
+module Instance (Name : Worker_intf.NAME) (Request : Worker_intf.REQUEST) : sig
+  (**
+     Builder for workers, aimed at being used in a more statical way, with
+     fixed [Name] and [Request] module parameters. When applied, [Instance]
+     initializes the set of inner worker events [Worker_events] by side effect.
+
+     It gives access to a Worker functor [Make] that is usable dynamically to
+     actually create a module of type [T].
+  *)
+
+  module Make (Types : Worker_intf.TYPES) :
+    T
+      with module Name = Name
+       and module Request = Request
+       and module Types = Types
+end
+
 module Make
     (Name : Worker_intf.NAME)
     (Request : Worker_intf.REQUEST)

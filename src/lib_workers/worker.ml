@@ -210,24 +210,17 @@ module type T = sig
   val find_opt : 'a table -> Name.t -> 'a t option
 end
 
-module Make
+module Make_internal
     (Name : Worker_intf.NAME)
     (Request : Worker_intf.REQUEST)
-    (Types : Worker_intf.TYPES) =
+    (Types : Worker_intf.TYPES)
+    (Worker_events : Worker_events.S
+                       with type view = Request.view
+                        and type critical_error = tztrace) =
 struct
   module Name = Name
   module Request = Request
   module Types = Types
-
-  module Worker_events =
-    Worker_events.Make (Name) (Request)
-      (struct
-        type t = tztrace
-
-        let encoding = Error_monad.trace_encoding
-
-        let pp = Error_monad.pp_print_trace
-      end)
 
   module Nametbl = Hashtbl.MakeSeeded (struct
     type t = Name.t
@@ -776,4 +769,30 @@ struct
   let () =
     Internal_event.register_section
       (Internal_event.Section.make_sanitized Name.base)
+end
+
+module Instance (Name : Worker_intf.NAME) (Request : Worker_intf.REQUEST) =
+struct
+  module Events =
+    Worker_events.Make (Name) (Request)
+      (struct
+        type t = tztrace
+
+        let encoding = Error_monad.trace_encoding
+
+        let pp = Error_monad.pp_print_trace
+      end)
+
+  module Make (Types : Worker_intf.TYPES) = struct
+    include Make_internal (Name) (Request) (Types) (Events)
+  end
+end
+
+module Make
+    (Name : Worker_intf.NAME)
+    (Request : Worker_intf.REQUEST)
+    (Types : Worker_intf.TYPES) =
+struct
+  module Worker = Instance (Name) (Request)
+  include Worker.Make (Types)
 end
