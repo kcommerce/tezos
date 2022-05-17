@@ -782,7 +782,7 @@ let call_contract (cctxt : #Protocol_client_context.full) ~chain ~block
     ~source
     ~src_pk
     ~src_sk
-    ~destination:(Contract contract)
+    ~destination:contract
     ~parameters
     ~amount:tez_amount
     ~entrypoint
