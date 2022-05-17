@@ -37,8 +37,6 @@ type worker_name = {base : string; name : string}
 module type T = sig
   module Name : Worker_intf.NAME
 
-  module Event : Worker_intf.EVENT
-
   module Request : Worker_intf.REQUEST
 
   module Types : Worker_intf.TYPES
@@ -247,11 +245,9 @@ end
 
 module Make
     (Name : Worker_intf.NAME)
-    (Event : Worker_intf.EVENT)
     (Request : Worker_intf.REQUEST)
     (Types : Worker_intf.TYPES) :
   T
     with module Name = Name
-     and module Event = Event
      and module Request = Request
      and module Types = Types

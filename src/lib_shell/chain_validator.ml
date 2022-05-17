@@ -105,7 +105,7 @@ module Types = struct
 end
 
 module Events = Chain_validator_events
-module Worker = Worker.Make (Name) (Event) (Request) (Types)
+module Worker = Worker.Make (Name) (Request) (Types)
 open Types
 
 type t = Worker.infinite Worker.queue Worker.t

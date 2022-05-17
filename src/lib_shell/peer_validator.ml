@@ -89,7 +89,7 @@ module Types = struct
 end
 
 module Events = Peer_validator_events
-module Worker = Worker.Make (Name) (Event) (Request) (Types)
+module Worker = Worker.Make (Name) (Request) (Types)
 open Types
 
 type t = Worker.dropbox Worker.t

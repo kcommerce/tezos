@@ -31,8 +31,6 @@ type worker_name = {base : string; name : string}
 module type T = sig
   module Name : Worker_intf.NAME
 
-  module Event : Worker_intf.EVENT
-
   module Request : Worker_intf.REQUEST
 
   module Types : Worker_intf.TYPES
@@ -214,12 +212,10 @@ end
 
 module Make
     (Name : Worker_intf.NAME)
-    (Event : Worker_intf.EVENT)
     (Request : Worker_intf.REQUEST)
     (Types : Worker_intf.TYPES) =
 struct
   module Name = Name
-  module Event = Event
   module Request = Request
   module Types = Types
 
