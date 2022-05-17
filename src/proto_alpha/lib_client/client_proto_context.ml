@@ -169,7 +169,7 @@ let transfer (cctxt : #full) ~chain ~block ?confirmations ?dry_run
     ~source
     ~src_pk
     ~src_sk
-    ~destination
+    ~destination:(Contract destination)
     ?entrypoint
     ~parameters
     ~amount
