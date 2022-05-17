@@ -240,6 +240,10 @@ test-coverage-tenderbake:
 	-@$(MAKE) test-unit-alpha
 	-@$(MAKE) test-python-tenderbake
 
+.PHONY: test-webassembly
+test-webassembly:
+	@dune build --profile=$(PROFILE) @src/lib_webassembly/runtest-python
+
 .PHONY: lint-opam-dune
 lint-opam-dune:
 	@dune build --profile=$(PROFILE) @runtest_dune_template
