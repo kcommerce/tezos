@@ -761,12 +761,9 @@ let rec create ~start_testchain ~active_chains ?parent ~block_validator_process
         unit tzresult Lwt.t =
       let request_view = Request.view request in
       let emit_and_return_unit errs =
-        let*! () =
-          Worker.log_event w (Request_failure (request_view, st, errs))
-        in
+        let*! () = Events.(emit request_failure) (request_view, st, errs) in
         return_unit
       in
-
       match request with
       | Validated _ ->
           (* If an error happens here, it means that the request
@@ -777,7 +774,6 @@ let rec create ~start_testchain ~active_chains ?parent ~block_validator_process
              example. If there is an error at this level, it certainly
              requires a manual operation from the maintener of the
              node. *)
-          let*! () = Events.(emit request_failure) (request_view, st, errs) in
           Lwt.return_error errs
       (* We do not crash the worker in the following cases mainly for one
          reason: Such request comes from a remote peer. The payload for this

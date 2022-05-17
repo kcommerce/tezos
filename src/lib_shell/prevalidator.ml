@@ -25,7 +25,7 @@
 (*****************************************************************************)
 
 open Prevalidator_worker_state
-module Event = Prevalidator_event
+module Events = Prevalidator_events
 
 type limits = {
   max_refused_operations : int;
@@ -357,7 +357,7 @@ module Make_s
   let already_handled ~origin shell oph =
     let open Lwt_syntax in
     if Operation_hash.Set.mem oph shell.banned_operations then
-      let+ () = Event.(emit ban_operation_encountered) (origin, oph) in
+      let+ () = Events.(emit ban_operation_encountered) (origin, oph) in
       true
     else
       Lwt.return
@@ -694,7 +694,7 @@ module Make_s
     | Ok state ->
         if Pending_ops.is_empty pv.shell.pending then Lwt.return_unit
         else
-          let* () = Event.(emit processing_operations) () in
+          let* () = Events.(emit processing_operations) () in
           let* (filter_state, validation_state, delta_mempool) =
             classify_pending_operations
               ~notifier
@@ -713,7 +713,7 @@ module Make_s
   let fetch_operation (shell : ('operation_data, _) types_state_shell) ?peer oph
       =
     let open Lwt_syntax in
-    let+ () = Event.(emit fetching_operation) oph in
+    let+ () = Events.(emit fetching_operation) oph in
     let* r =
       shell.parameters.tools.fetch
         ~timeout:shell.parameters.limits.operation_timeout
@@ -725,10 +725,10 @@ module Make_s
         shell.worker.push_request_now (Arrived (oph, op)) ;
         Lwt.return_unit
     | Error (Distributed_db.Operation.Canceled _ :: _) ->
-        Event.(emit operation_included) oph
+        Events.(emit operation_included) oph
     | Error _ ->
         (* This may happen if the peer timed out for example. *)
-        Event.(emit operation_not_fetched) oph
+        Events.(emit operation_not_fetched) oph
 
   (* This function fetches an operation if it is not already handled
      by the mempool. To ensure we fetch at most a given operation,
@@ -745,7 +745,7 @@ module Make_s
       oph =
     let open Lwt_syntax in
     let origin =
-      match peer with Some peer -> Event.Peer peer | None -> Leftover
+      match peer with Some peer -> Events.Peer peer | None -> Leftover
     in
     let* already_handled = already_handled ~origin shell oph in
     if not already_handled then
@@ -766,13 +766,13 @@ module Make_s
     let on_arrived (pv : types_state) oph op =
       let open Lwt_syntax in
       let* already_handled =
-        already_handled ~origin:Event.Arrived pv.shell oph
+        already_handled ~origin:Events.Arrived pv.shell oph
       in
       if already_handled then return_ok_unit
       else
         match Prevalidation_t.parse oph op with
         | Error _ ->
-            let* () = Event.(emit unparsable_operation) oph in
+            let* () = Events.(emit unparsable_operation) oph in
             Prevalidator_classification.add_unparsable
               oph
               pv.shell.classification ;
@@ -815,7 +815,7 @@ module Make_s
       *)
       let prio = `High in
       let*! already_handled =
-        already_handled ~origin:Event.Injected pv.shell oph
+        already_handled ~origin:Events.Injected pv.shell oph
       in
       if already_handled then
         (* FIXME: https://gitlab.com/tezos/tezos/-/issues/1722
@@ -991,7 +991,7 @@ module Make_s
           new_pending_operations
           (Pending_ops.empty, 0)
       in
-      let*! () = Event.(emit operations_to_reclassify) nb_pending in
+      let*! () = Events.(emit operations_to_reclassify) nb_pending in
       pv.shell.pending <- new_pending_operations ;
       set_mempool pv.shell Mempool.empty
 
@@ -1153,7 +1153,7 @@ module Make
                 in
                 pv.filter_config <- config ;
                 Lwt.return_unit
-              with _ -> Event.(emit invalid_mempool_filter_configuration) ()
+              with _ -> Events.(emit invalid_mempool_filter_configuration) ()
             in
             return_ok (get_filter_config_json pv)) ;
       (* Ban an operation (from its given hash): remove it from the
@@ -1617,12 +1617,12 @@ module Make
       let open Lwt_result_syntax in
       let emit_and_return errs =
         let request_view = Request.view request in
-        let*! () = Event.(emit request_failed) (request_view, st, errs) in
+        let*! () = Events.(emit request_failed) (request_view, st, errs) in
         Lwt.return_error errs
       in
       match request with
       | Request.(Inject _) as r ->
-          let*! () = Event.(emit request_failed) (Request.view r, st, errs) in
+          let*! () = Events.(emit request_failed) (Request.view r, st, errs) in
           return_unit
       | Request.Flush _ -> emit_and_return errs
       | Request.Notify _ -> emit_and_return errs
@@ -1634,9 +1634,9 @@ module Make
     let on_completion _w r _ st =
       match Request.view r with
       | Request.View (Flush _) | View (Inject _) | View (Ban _) ->
-          Event.(emit request_completed_notice) (Request.view r, st)
+          Events.(emit request_completed_notice) (Request.view r, st)
       | View (Notify _) | View Leftover | View (Arrived _) | View Advertise ->
-          Event.(emit request_completed_debug) (Request.view r, st)
+          Events.(emit request_completed_debug) (Request.view r, st)
 
     let on_no_request _ = Lwt.return_unit
   end
