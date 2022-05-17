@@ -66,3 +66,10 @@ val string_of_kind : Kind.t -> string
 
 (** [pp fmt kind] is a pretty-printer for [kind]. *)
 val pp : Format.formatter -> Kind.t -> unit
+
+type wrapped_proof = Wrapped_proof : {
+    pvm : (module PVM.S with type proof = 'a);
+    proof : 'a; 
+  } -> wrapped_proof
+
+val wrapped_proof_encoding : wrapped_proof Data_encoding.t

@@ -860,7 +860,7 @@ let get_or_init_game ctxt rollup ~refuter ~defender =
       return (game, ctxt)
 
 (* TODO: #2926 this requires carbonation *)
-let update_game ctxt rollup pvm_ops ~player ~opponent refutation =
+let update_game ctxt rollup ~player ~opponent refutation =
   let open Lwt_tzresult_syntax in
   let alice, bob = Sc_rollup_game_repr.Index.normalize (player, opponent) in
   let* game, ctxt =
@@ -872,7 +872,7 @@ let update_game ctxt rollup pvm_ops ~player ~opponent refutation =
     else fail Sc_rollup_wrong_turn
   in
   let* move_result =
-    Lwt.map Result.ok @@ Sc_rollup_game_repr.play pvm_ops game refutation
+    Lwt.map Result.ok @@ Sc_rollup_game_repr.play game refutation
   in
   match move_result with
   | Either.Left outcome -> return (Some outcome, ctxt)

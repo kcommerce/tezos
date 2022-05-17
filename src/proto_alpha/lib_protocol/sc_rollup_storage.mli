@@ -504,7 +504,6 @@ val get_or_init_game :
 val update_game :
   Raw_context.t ->
   Sc_rollup_repr.t ->
-  Sc_rollup_proof_repr.pvm_ops ->
   player:Sc_rollup_repr.Staker.t ->
   opponent:Sc_rollup_repr.Staker.t ->
   Sc_rollup_game_repr.refutation ->

@@ -581,6 +581,7 @@ type inbox = t
 
 (** XXX *)
 module Proof = struct
+  (** XXX list is bounded---why? reference issue to improve efficiency*)
   type t = {
     skips : (inbox * inclusion_proof) list;
     level : inbox;
