@@ -30,7 +30,8 @@
   irmin-pack.unix
   irmin
   ringo
-  ringo-lwt)
+  ringo-lwt
+  tezos-injector-013-PtJakart)
  (flags
   (:standard
    -open Tezos_base.TzPervasives
@@ -45,4 +46,5 @@
    -open Tezos_protocol_013_PtJakart_parameters
    -open Tezos_rpc
    -open Tezos_shell_services
-   -open Tezos_sc_rollup_013_PtJakart)))
+   -open Tezos_sc_rollup_013_PtJakart
+   -open Tezos_injector_013_PtJakart)))
