@@ -579,13 +579,15 @@ struct
 
   type client = {
     initial : (Sc_rollup_tick_repr.t * PVM.hash) option Lwt.t;
-    signature : public_key_hash;
     next_move : t -> refutation option Lwt.t;
   }
 
   let run ~inbox ~refuter_client ~defender_client =
-    let defender = defender_client.signature in
-    let refuter = refuter_client.signature in
+    let s1, _, _ = Signature.generate_key () in
+    let s2, _, _ = Signature.generate_key () in
+    let defender, refuter =
+      match Staker.compare s1 s2 with 1 -> (s1, s2) | _ -> (s2, s1)
+    in
     let* start_hash = PVM.state_hash PVM.Utils.default_state in
     let* initial_data = defender_client.initial in
     let tick, initial_hash =
@@ -717,9 +719,7 @@ struct
 
   (** there are two kinds of strategies, random and machine dirrected by a
   params and a checkpoint*)
-  type strategy =
-    | Random of Signature.public_key_hash
-    | MachineDirected of checkpoint * Signature.public_key_hash
+  type strategy = Random | MachineDirected of checkpoint
 
   (**
   [find_conflict dissection] finds the section (if it exists) in a dissection that 
@@ -797,7 +797,7 @@ struct
 
   (** this is an outomatic commuter client. It generates a "perfect" client
   for the committer.*)
-  let machine_directed_committer pred signature =
+  let machine_directed_committer pred =
     let start_state = PVM.Utils.default_state in
     let initial =
       let* stop_at, stop_state =
@@ -815,25 +815,25 @@ struct
       | Some move -> Lwt.return (Some move)
       | None -> Lwt.return None
     in
-    {initial; signature; next_move}
+    {initial; next_move}
 
   (** this is an automatic refuter client. It generates a "perfect" client
   for the refuter.*)
-  let machine_directed_refuter signature =
+  let machine_directed_refuter =
     let initial = Lwt.return None in
     let next_move game =
       let dissection = game.dissection in
       next_move dissection
     in
 
-    {initial; next_move; signature}
+    {initial; next_move}
 
   (** This builds a committer client from a strategy.
     If the strategy is MachineDirected it uses the above constructions.
     If the strategy is random then it uses a random section for the initial
     commitments and  the random decision for the next move.*)
   let committer_from_strategy = function
-    | Random signature ->
+    | Random ->
         let initial =
           (* let length = 1 + Random.int 20 in *)
           let random_state = PVM.Utils.default_state in
@@ -842,13 +842,8 @@ struct
           Lwt.return (Some (random_tick, stop_hash))
         in
 
-        {
-          initial;
-          signature;
-          next_move = (fun game -> random_decision game.dissection);
-        }
-    | MachineDirected (checkpoint, signature) ->
-        machine_directed_committer checkpoint signature
+        {initial; next_move = (fun game -> random_decision game.dissection)}
+    | MachineDirected checkpoint -> machine_directed_committer checkpoint
 
   (** This builds a refuter client from a strategy.
     If the strategy is MachineDirected it uses the above constructions.
@@ -856,13 +851,12 @@ struct
     of the commited section for the initial refutation
      and  the random decision for the next move.*)
   let refuter_from_strategy = function
-    | Random signature ->
+    | Random ->
         {
           initial = Lwt.return None;
-          signature;
           next_move = (fun game -> random_decision game.dissection);
         }
-    | MachineDirected (_, signature) -> machine_directed_refuter signature
+    | MachineDirected _ -> machine_directed_refuter
 
   (** [test_strategies committer_strategy refuter_strategy expectation]
     runs a game based oin the two given strategies and checks that the
@@ -875,17 +869,15 @@ struct
     expectation outcome
 
   (** This is a commuter client having a perfect strategy*)
-  let perfect_committer signature =
+  let perfect_committer =
     MachineDirected
-      ( (fun tick ->
-          let t0 = 20 + Random.int 100 in
-          assume_some (Sc_rollup_tick_repr.to_int tick) @@ fun tick ->
-          tick >= t0),
-        signature )
+      (fun tick ->
+        let t0 = 20 + Random.int 100 in
+        assume_some (Sc_rollup_tick_repr.to_int tick) @@ fun tick -> tick >= t0)
+
   (** This is a refuter client having a perfect strategy*)
 
-  let perfect_refuter signature =
-    MachineDirected ((fun _ -> assert false), signature)
+  let perfect_refuter = MachineDirected (fun _ -> assert false)
 
   (** This is a commuter client having a strategy that forgets a tick*)
 
@@ -906,70 +898,40 @@ struct
 end
 
 (** the following are the possible combinations of strategies*)
-let perfect_perfect (module P : TestPVM) _max_failure committer_signature
-    refuter_signature inbox =
+let perfect_perfect (module P : TestPVM) _max_failure inbox =
   let module R = Strategies (P) in
   Lwt.return
   @@ R.test_strategies
-       (R.perfect_committer committer_signature)
-       (R.perfect_refuter refuter_signature)
+       R.perfect_committer
+       R.perfect_refuter
        R.commiter_wins
        inbox
 
-let random_random (module P : TestPVM) _max_failure committer_signature
-    refuter_signature inbox =
+let random_random (module P : TestPVM) _max_failure inbox =
   let module S = Strategies (P) in
-  Lwt.return
-  @@ S.test_strategies
-       (Random committer_signature)
-       (Random refuter_signature)
-       S.all_win
-       inbox
+  Lwt.return @@ S.test_strategies Random Random S.all_win inbox
 
-let random_perfect (module P : TestPVM) _max_failure committer_signature
-    refuter_signature inbox =
+let random_perfect (module P : TestPVM) _max_failure inbox =
   let module S = Strategies (P) in
-  Lwt.return
-  @@ S.test_strategies
-       (Random committer_signature)
-       (S.perfect_refuter refuter_signature)
-       S.refuter_wins
-       inbox
+  Lwt.return @@ S.test_strategies Random S.perfect_refuter S.refuter_wins inbox
 
-let perfect_random (module P : TestPVM) _max_failure committer_signature
-    refuter_signature inbox =
+let perfect_random (module P : TestPVM) _max_failure inbox =
   let module S = Strategies (P) in
   Lwt.return
-  @@ S.test_strategies
-       (S.perfect_committer committer_signature)
-       (Random refuter_signature)
-       S.commiter_wins
-       inbox
+  @@ S.test_strategies S.perfect_committer Random S.commiter_wins inbox
 
 (** this assembles a test from a RandomPVM and a function that choses the
   type of strategies *)
 let testing_randomPVM
-    (f :
-      (module TestPVM) ->
-      int option ->
-      Signature.public_key_hash ->
-      Signature.public_key_hash ->
-      Sc_rollup_inbox_repr.t ->
-      bool Lwt.t) name =
+    (f : (module TestPVM) -> int option -> Sc_rollup_inbox_repr.t -> bool Lwt.t)
+    name =
   let open QCheck2 in
   Test.make
     ~name
     (Gen.list_size Gen.small_int (Gen.int_range 0 100))
     (fun initial_prog ->
       assume (initial_prog <> []) ;
-      let s1, _, _ = Signature.generate_key () in
-      let s2, _, _ = Signature.generate_key () in
-      let s1, s2 =
-        match Staker.compare s1 s2 with 1 -> (s1, s2) | _ -> (s2, s1)
-      in
-
       let rollup = Sc_rollup_repr.Address.hash_string [""] in
-
       let level =
         Raw_level_repr.of_int32 0l |> function Ok x -> x | _ -> assert false
       in
@@ -980,30 +942,17 @@ let testing_randomPVM
              let initial_prog = initial_prog
            end))
            (Some (List.length initial_prog))
-           s1
-           s2
            inbox)
 
 (** this assembles a test from a CountingPVM and a function that choses
 the type of strategies *)
 let testing_countPVM
-    (f :
-      (module TestPVM) ->
-      int option ->
-      Signature.public_key_hash ->
-      Signature.public_key_hash ->
-      Sc_rollup_inbox_repr.t ->
-      bool Lwt.t) name =
+    (f : (module TestPVM) -> int option -> Sc_rollup_inbox_repr.t -> bool Lwt.t)
+    name =
   let open QCheck2 in
   Test.make ~name Gen.small_int (fun target ->
       assume (target > 200) ;
-      let s1, _, _ = Signature.generate_key () in
-      let s2, _, _ = Signature.generate_key () in
-      let s1, s2 =
-        match Staker.compare s1 s2 with 1 -> (s1, s2) | _ -> (s2, s1)
-      in
       let rollup = Sc_rollup_repr.Address.hash_string [""] in
-
       let level =
         Raw_level_repr.of_int32 0l |> function Ok x -> x | _ -> assert false
       in
@@ -1014,31 +963,18 @@ let testing_countPVM
              let target = target
            end))
            (Some target)
-           s1
-           s2
            inbox)
 
 let testing_arith
-    (f :
-      (module TestPVM) ->
-      int option ->
-      Signature.public_key_hash ->
-      Signature.public_key_hash ->
-      Sc_rollup_inbox_repr.t ->
-      bool Lwt.t) name =
+    (f : (module TestPVM) -> int option -> Sc_rollup_inbox_repr.t -> bool Lwt.t)
+    name =
   let open QCheck2 in
   Test.make
     ~name
     Gen.(pair gen_list small_int)
     (fun (inputs, evals) ->
       assume (evals > 1 && evals < List.length inputs - 1) ;
-      let s1, _, _ = Signature.generate_key () in
-      let s2, _, _ = Signature.generate_key () in
-      let s1, s2 =
-        match Staker.compare s1 s2 with 1 -> (s1, s2) | _ -> (s2, s1)
-      in
       let rollup = Sc_rollup_repr.Address.hash_string [""] in
-
       let level =
         Raw_level_repr.of_int32 0l |> function Ok x -> x | _ -> assert false
       in
@@ -1051,8 +987,6 @@ let testing_arith
              let evals = evals
            end))
            (Some evals)
-           s1
-           s2
            inbox)
 
 let test_random_dissection (module P : TestPVM) start_at length =
