@@ -148,6 +148,22 @@ let test_inclusion_proof_production (list_of_payloads, n) =
         (verify_inclusion_proof proof old_inbox inbox)
         (err "The produced inclusion proof is invalid.")
 
+let test_inclusion_proof_is_valid (list_of_payloads, n) =
+  setup_inbox_with_messages list_of_payloads
+  @@ fun _messages history _inbox inboxes ->
+  let inbox = Stdlib.List.hd inboxes in
+  let old_inbox = Stdlib.List.nth inboxes n in
+  produce_inclusion_proof history old_inbox inbox |> function
+  | None ->
+      fail
+      @@ err
+           "It should be possible to produce an inclusion proof between two \
+            versions of the same inbox."
+  | Some proof ->
+      fail_unless
+        (is_valid proof)
+        (err "The produced inclusion proof is invalid.")
+
 let test_inclusion_proof_verification (list_of_payloads, n) =
   setup_inbox_with_messages list_of_payloads
   @@ fun _messages history _inbox inboxes ->
@@ -212,6 +228,11 @@ let tests =
       ~name:"Produce inclusion proof between two related inboxes."
       gen_inclusion_proof_inputs
       test_inclusion_proof_production;
+    Tztest.tztest_qcheck
+      ~count:10
+      ~name:"Inclusion proofs are valid."
+      gen_inclusion_proof_inputs
+      test_inclusion_proof_is_valid;
     Tztest.tztest_qcheck
       ~count:10
       ~name:"Verify inclusion proofs."

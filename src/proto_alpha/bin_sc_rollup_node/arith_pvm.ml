@@ -50,7 +50,13 @@ module Arith_proof_format = struct
     kinded_hash_to_state_hash proof.IStoreProof.Proof.after
 
   let proof_encoding =
-    Tezos_context_helpers.Merkle_proof_encoding.V2.Tree32.tree_proof_encoding
+    Tezos_context_helpers.Merkle_proof_encoding.V2.Tree2.tree_proof_encoding
+
+  let is_valid proof =
+    let encoded_proof =
+      Data_encoding.Binary.to_bytes_exn proof_encoding proof
+    in
+    Compare.Int.(Bytes.length encoded_proof < 1024)
 end
 
 module Impl : Pvm.S = struct

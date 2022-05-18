@@ -72,6 +72,9 @@ module type S = sig
 
   val proof_encoding : proof Data_encoding.t
 
+  (* a proof is_valid if its encoding is smaller than 1024 bytes*)
+  val is_valid : proof -> bool
+
   (** A state is initialized in a given context. *)
   type context
 

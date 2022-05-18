@@ -310,6 +310,10 @@ module type MerkelizedOperations = sig
 
   type inclusion_proof
 
+  val inclusion_proof_encoding : inclusion_proof Data_encoding.t
+
+  val is_valid : inclusion_proof -> bool
+
   val pp_inclusion_proof : Format.formatter -> inclusion_proof -> unit
 
   val number_of_proof_steps : inclusion_proof -> int
@@ -517,6 +521,14 @@ module MakeHashingScheme (Tree : TREE) :
      because there is no obviously encoding of sequences in these data
      structures with the same guarantee about the size of proofs. *)
   type inclusion_proof = history_proof list
+
+  let inclusion_proof_encoding = Data_encoding.list history_proof_encoding
+
+  let is_valid proof =
+    let encoded_proof =
+      Data_encoding.Binary.to_bytes_exn inclusion_proof_encoding proof
+    in
+    Compare.Int.(Bytes.length encoded_proof <= 1024)
 
   let pp_inclusion_proof fmt proof =
     Format.pp_print_list pp_history_proof fmt proof

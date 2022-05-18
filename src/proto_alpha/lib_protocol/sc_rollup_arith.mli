@@ -133,6 +133,8 @@ module type P = sig
 
   val proof_encoding : proof Data_encoding.t
 
+  val is_valid : proof -> bool
+
   val proof_start_state : proof -> Sc_rollup.State_hash.t
 
   val proof_stop_state : proof -> Sc_rollup.State_hash.t

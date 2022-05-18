@@ -35,6 +35,8 @@ module type P = sig
 
   val proof_encoding : proof Data_encoding.t
 
+  val is_valid : proof -> bool
+
   val proof_start_state : proof -> State_hash.t
 
   val proof_stop_state : proof -> State_hash.t
@@ -100,6 +102,8 @@ module Make (Context : P) :
   type proof = Context.proof
 
   let proof_encoding = Context.proof_encoding
+
+  let is_valid = Context.is_valid
 
   let proof_start_state = Context.proof_start_state
 
@@ -993,5 +997,11 @@ module ProtocolImplementation = Make (struct
   let proof_stop_state proof =
     kinded_hash_to_state_hash proof.Context.Proof.after
 
-  let proof_encoding = Context.Proof_encoding.V2.Tree32.tree_proof_encoding
+  let proof_encoding = Context.Proof_encoding.V2.Tree2.tree_proof_encoding
+
+  let is_valid proof =
+    let encoded_proof =
+      Data_encoding.Binary.to_bytes_exn proof_encoding proof
+    in
+    Compare.Int.(Bytes.length encoded_proof < 1024)
 end)
