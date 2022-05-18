@@ -1755,13 +1755,13 @@ let apply_external_manager_operation_content :
       let result = Sc_rollup_publish_result {staked_hash; consumed_gas} in
       return (ctxt, result, [])
   | Sc_rollup_refute {rollup; opponent; refutation; opening_move} ->
-      Sc_rollup.update_game
+      Sc_rollup.game_move
         ctxt
         rollup
         ~player:source
         ~opponent
         refutation
-        opening_move
+        ~opening_move
       >>=? fun (outcome, ctxt) ->
       (match outcome with
       | None -> return (Sc_rollup.Game.Ongoing, ctxt)

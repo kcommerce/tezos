@@ -888,7 +888,7 @@ let get_or_init_game ctxt rollup ~refuter ~defender init =
       return (game, ctxt)
 
 (* TODO: #2926 this requires carbonation *)
-let update_game ctxt rollup ~player ~opponent refutation opening_move =
+let game_move ctxt rollup ~player ~opponent refutation ~opening_move =
   let open Lwt_tzresult_syntax in
   let alice, bob = Sc_rollup_game_repr.Index.normalize (player, opponent) in
   let* game, ctxt =
