@@ -76,7 +76,23 @@ let check pred =
   if pred then return () else error ()
 
 let check_dissection start_tick stop_tick dissection =
-  let length = List.length dissection > 2 in
+  let length = List.length dissection in
+  let all_but_last = List.take_n (length - 1) dissection in
+  let tail = List.drop_n 1 dissection in
+  let length_check =
+    if List.length dissection > 32 then true
+    else
+      match
+        List.for_all2
+          ~when_different_lengths:"different"
+          (fun (_, a) (_, b) -> Sc_rollup_tick_repr.(next a = b))
+          all_but_last
+          tail
+      with
+      | Ok a -> a
+      | _ -> assert false
+  in
+
   let ends =
     match (List.hd dissection, List.last_opt dissection) with
     | Some (_, a_tick), Some (_, b_tick) ->
@@ -92,7 +108,7 @@ let check_dissection start_tick stop_tick dissection =
     | (None, _) :: _ :: _ -> true
     | _ -> true
   in
-  length && ends && traverse dissection
+  length_check && ends && traverse dissection
 
 let number_of_messages_exn n =
   match Sc_rollup_repr.Number_of_messages.of_int32 n with
@@ -188,7 +204,7 @@ let gen_list =
                    ( 2,
                      map2
                        (fun x (stack_size, state_list) ->
-                         if stack_size > 2 then
+                         if stack_size >= 2 then
                            (stack_size - 1, "+" :: state_list)
                          else (stack_size + 1, string_of_int x :: state_list))
                        nat
@@ -433,15 +449,12 @@ end) : TestPVM = struct
             }
         in
         let prelim = set_input input boot in
-        List.fold_left
-          (fun acc _ -> acc >>= fun acc -> ContextPVM.eval acc)
-          prelim
+        List.fold_left (fun acc _ -> acc >>= fun acc -> eval acc) prelim
         @@ List.repeat P.evals ()
       in
       Lwt_main.run promise
 
     let random_state i state =
-      let open ContextPVM in
       let program = correct_string () in
       let input =
         Sc_rollup_PVM_sem.
@@ -453,9 +466,7 @@ end) : TestPVM = struct
       in
       let prelim = set_input input state in
       Lwt_main.run
-      @@ List.fold_left
-           (fun acc _ -> acc >>= fun acc -> ContextPVM.eval acc)
-           prelim
+      @@ List.fold_left (fun acc _ -> acc >>= fun acc -> eval acc) prelim
       @@ List.repeat (min i (List.length program - 2) + 1) ()
 
     let make_proof s1 s2 v =
@@ -490,8 +501,9 @@ struct
   (* Sc_rollup_game.Make (P) *)
   open Game
 
-  (** [execute_until tick stat prop] runs eval until the tick satisfies pred.
-      It returns the new tick and the modified state
+  (** [execute_until tick stat prop] runs eval until the tick satisfies pred or 
+  until the state machine does not change anymore. It returns the new tick and 
+  the modified state
   *)
   let execute_until tick state pred =
     let rec loop state tick =
