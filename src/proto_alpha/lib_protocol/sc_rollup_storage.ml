@@ -59,44 +59,56 @@ let () =
       | Sc_rollup_max_number_of_available_messages_reached -> Some ()
       | _ -> None)
     (fun () -> Sc_rollup_max_number_of_available_messages_reached) ;
+  let description =
+    "Attempt to start a game where one staker is already busy"
+  in
   register_error_kind
     `Temporary
     ~id:"Sc_rollup_staker_in_game"
     ~title:"Staker is already playing a game"
-    ~description:"Attempt to start a game where one staker is already busy"
+    ~description
+    ~pp:(fun ppf () -> Format.fprintf ppf "%s" description)
     Data_encoding.unit
     (function Sc_rollup_staker_in_game -> Some () | _ -> None)
     (fun () -> Sc_rollup_staker_in_game) ;
+  let description = "Attempt to commit zero ticks with state change" in
   register_error_kind
     `Temporary
     ~id:"Sc_rollup_state_change_on_zero_tick_commitment"
-    ~title:"Attempt to commit zero ticks with state change"
-    ~description:"Attempt to commit zero ticks with state change"
+    ~title:description
+    ~description
+    ~pp:(fun ppf () -> Format.fprintf ppf "%s" description)
     Data_encoding.unit
     (function
       | Sc_rollup_state_change_on_zero_tick_commitment -> Some () | _ -> None)
     (fun () -> Sc_rollup_state_change_on_zero_tick_commitment) ;
+  let description = "Attempt to timeout game too early" in
   register_error_kind
     `Temporary
     ~id:"Sc_rollup_timeout_level_not_reached"
-    ~title:"Attempt to timeout game too early"
-    ~description:"Attempt to timeout game too early"
+    ~title:description
+    ~description
+    ~pp:(fun ppf () -> Format.fprintf ppf "%s" description)
     Data_encoding.unit
     (function Sc_rollup_timeout_level_not_reached -> Some () | _ -> None)
     (fun () -> Sc_rollup_timeout_level_not_reached) ;
+  let description = "Refutation game does not exist" in
   register_error_kind
     `Temporary
     ~id:"Sc_rollup_no_game"
-    ~title:"Refutation game does not exist"
-    ~description:"Refutation game does not exist"
+    ~title:description
+    ~description
+    ~pp:(fun ppf () -> Format.fprintf ppf "%s" description)
     Data_encoding.unit
     (function Sc_rollup_no_game -> Some () | _ -> None)
     (fun () -> Sc_rollup_no_game) ;
+  let description = "Attempt to play move but not staker's turn" in
   register_error_kind
     `Temporary
     ~id:"Sc_rollup_wrong_turn"
     ~title:"Attempt to play move but not staker's turn"
-    ~description:"Attempt to play move but not staker's turn"
+    ~description
+    ~pp:(fun ppf () -> Format.fprintf ppf "%s" description)
     Data_encoding.unit
     (function Sc_rollup_wrong_turn -> Some () | _ -> None)
     (fun () -> Sc_rollup_wrong_turn) ;
