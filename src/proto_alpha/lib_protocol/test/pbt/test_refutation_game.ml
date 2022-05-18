@@ -761,8 +761,8 @@ struct
     | None -> Lwt.return None
 
   (** this is an outomatic commuter client. It generates a "perfect" client
-  for the committer.*)
-  let machine_directed_committer pred =
+  for the defender.*)
+  let machine_directed_defender pred =
     let start_state = PVM.Utils.default_state in
     let initial =
       let* stop_at, stop_state =
@@ -793,11 +793,11 @@ struct
 
     {initial; next_move}
 
-  (** This builds a committer client from a strategy.
+  (** This builds a defender client from a strategy.
     If the strategy is MachineDirected it uses the above constructions.
     If the strategy is random then it uses a random section for the initial
     commitments and  the random decision for the next move.*)
-  let committer_from_strategy = function
+  let defender_from_strategy = function
     | Random ->
         let initial =
           (* let length = 1 + Random.int 20 in *)
@@ -808,7 +808,7 @@ struct
         in
 
         {initial; next_move = (fun game -> random_decision game.dissection)}
-    | MachineDirected checkpoint -> machine_directed_committer checkpoint
+    | MachineDirected checkpoint -> machine_directed_defender checkpoint
 
   (** This builds a refuter client from a strategy.
     If the strategy is MachineDirected it uses the above constructions.
@@ -823,18 +823,18 @@ struct
         }
     | MachineDirected _ -> machine_directed_refuter
 
-  (** [test_strategies committer_strategy refuter_strategy expectation]
+  (** [test_strategies defender_strategy refuter_strategy expectation]
     runs a game based oin the two given strategies and checks that the
      resulting outcome fits the expectations. *)
-  let test_strategies committer_strategy refuter_strategy expectation inbox =
-    let defender_client = committer_from_strategy committer_strategy in
+  let test_strategies defender_strategy refuter_strategy expectation inbox =
+    let defender_client = defender_from_strategy defender_strategy in
     let refuter_client = refuter_from_strategy refuter_strategy in
     let outcome = run ~inbox ~defender_client ~refuter_client in
     Format.printf "%a" Sc_rollup_game_repr.pp_outcome (Lwt_main.run outcome) ;
     expectation outcome
 
   (** This is a commuter client having a perfect strategy*)
-  let perfect_committer =
+  let perfect_defender =
     MachineDirected
       (fun tick ->
         let t0 = 20 + Random.int 100 in
@@ -847,7 +847,7 @@ struct
   (** This is a commuter client having a strategy that forgets a tick*)
 
   (** the possible expectation functions *)
-  let commiter_wins x =
+  let defender_wins x =
     Lwt_main.run
       (x >>= function
        | {loser = Alice; _} -> Lwt.return true
@@ -863,33 +863,32 @@ struct
 end
 
 (** the following are the possible combinations of strategies*)
-let perfect_perfect (module P : TestPVM) _max_failure inbox =
+let perfect_perfect (module P : TestPVM) inbox =
   let module R = Strategies (P) in
   Lwt.return
   @@ R.test_strategies
-       R.perfect_committer
+       R.perfect_defender
        R.perfect_refuter
-       R.commiter_wins
+       R.defender_wins
        inbox
 
-let random_random (module P : TestPVM) _max_failure inbox =
+let random_random (module P : TestPVM) inbox =
   let module S = Strategies (P) in
   Lwt.return @@ S.test_strategies Random Random S.all_win inbox
 
-let random_perfect (module P : TestPVM) _max_failure inbox =
+let random_perfect (module P : TestPVM) inbox =
   let module S = Strategies (P) in
   Lwt.return @@ S.test_strategies Random S.perfect_refuter S.refuter_wins inbox
 
-let perfect_random (module P : TestPVM) _max_failure inbox =
+let perfect_random (module P : TestPVM) inbox =
   let module S = Strategies (P) in
   Lwt.return
-  @@ S.test_strategies S.perfect_committer Random S.commiter_wins inbox
+  @@ S.test_strategies S.perfect_defender Random S.defender_wins inbox
 
 (** this assembles a test from a RandomPVM and a function that choses the
   type of strategies *)
 let testing_randomPVM
-    (f : (module TestPVM) -> int option -> Sc_rollup_inbox_repr.t -> bool Lwt.t)
-    name =
+    (f : (module TestPVM) -> Sc_rollup_inbox_repr.t -> bool Lwt.t) name =
   let open QCheck2 in
   Test.make
     ~name
@@ -906,14 +905,12 @@ let testing_randomPVM
            (module MakeRandomPVM (struct
              let initial_prog = initial_prog
            end))
-           (Some (List.length initial_prog))
            inbox)
 
 (** this assembles a test from a CountingPVM and a function that choses
 the type of strategies *)
 let testing_countPVM
-    (f : (module TestPVM) -> int option -> Sc_rollup_inbox_repr.t -> bool Lwt.t)
-    name =
+    (f : (module TestPVM) -> Sc_rollup_inbox_repr.t -> bool Lwt.t) name =
   let open QCheck2 in
   Test.make ~name Gen.small_int (fun target ->
       assume (target > 200) ;
@@ -927,11 +924,9 @@ let testing_countPVM
            (module MakeCountingPVM (struct
              let target = target
            end))
-           (Some target)
            inbox)
 
-let testing_arith
-    (f : (module TestPVM) -> int option -> Sc_rollup_inbox_repr.t -> bool Lwt.t)
+let testing_arith (f : (module TestPVM) -> Sc_rollup_inbox_repr.t -> bool Lwt.t)
     name =
   let open QCheck2 in
   Test.make
@@ -951,7 +946,6 @@ let testing_arith
 
              let evals = evals
            end))
-           (Some evals)
            inbox)
 
 let test_random_dissection (module P : TestPVM) start_at length =
