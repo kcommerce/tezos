@@ -854,15 +854,31 @@ let timeout_level ctxt =
   let level = Raw_context.current_level ctxt in
   Raw_level_repr.add level.level timeout_period_in_blocks
 
-let get_or_init_game ctxt rollup ~refuter ~defender init =
+(* Either return the game or fail with `Sc_rollup_game_does_not_exist`. *)
+let get_game ctxt rollup stakers =
+  let open Lwt_tzresult_syntax in
+  let* ctxt, game = Store.Game.find (ctxt, rollup) stakers in
+  match game with
+  | Some g -> return (g, ctxt)
+  | None -> fail Sc_rollup_game_does_not_exist
+
+(* Either initialise the game or if it already exists, fail with
+   `Sc_rollup_game_already_started`.
+
+   This checks the [defender] is not already playing a game. If so it
+   fails with `Sc_rollup_staker_in_game`.
+
+   It uses `get_conflict_point` to determine the commit where the
+   stakers disagree, and then the `initial` function in the
+   `Sc_rollup_game_repr` module to actually produce the initial state of
+   the game. *)
+let init_game ctxt rollup ~refuter ~defender =
   let open Lwt_tzresult_syntax in
   let stakers = Sc_rollup_game_repr.Index.normalize (refuter, defender) in
   let* ctxt, game = Store.Game.find (ctxt, rollup) stakers in
-  match (init, game) with
-  | false, Some g -> return (g, ctxt)
-  | true, Some _ -> fail Sc_rollup_game_already_started
-  | false, None -> fail Sc_rollup_game_does_not_exist
-  | true, None ->
+  match game with
+  | Some _ -> fail Sc_rollup_game_already_started
+  | None ->
       let* ctxt, opp_1 = Store.Opponent.find (ctxt, rollup) refuter in
       let* ctxt, opp_2 = Store.Opponent.find (ctxt, rollup) defender in
       let* _ =
@@ -892,7 +908,9 @@ let game_move ctxt rollup ~player ~opponent refutation ~opening_move =
   let open Lwt_tzresult_syntax in
   let alice, bob = Sc_rollup_game_repr.Index.normalize (player, opponent) in
   let* game, ctxt =
-    get_or_init_game ctxt rollup ~refuter:player ~defender:opponent opening_move
+    if opening_move then
+      init_game ctxt rollup ~refuter:player ~defender:opponent
+    else get_game ctxt rollup (alice, bob)
   in
   let* _ =
     let turn = match game.turn with Alice -> alice | Bob -> bob in
