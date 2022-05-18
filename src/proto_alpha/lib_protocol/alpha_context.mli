@@ -2698,14 +2698,6 @@ module Sc_rollup : sig
   val last_cemented_commitment_hash_with_level :
     context -> t -> (Commitment_hash.t * Raw_level.t * context) tzresult Lwt.t
 
-  val get_or_init_game :
-    context ->
-    t ->
-    refuter:Staker.t ->
-    defender:Staker.t ->
-    bool ->
-    (Game.t * context) tzresult Lwt.t
-
   val update_game :
     context ->
     t ->
