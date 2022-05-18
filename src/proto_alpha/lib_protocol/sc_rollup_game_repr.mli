@@ -188,7 +188,10 @@ type player = Alice | Bob
 
     Invariants:
     -----------
-    - [dissection] must contain at least 2 values
+    - [dissection] must contain at least 2 values (normally it will be 32
+    values, but smaller if there isn't enough space for a dissection
+    that size. The initial game dissection will usually be 3 values; in
+    the unusual case of a zero-tick commit it will have 2 values.)
     - only the last value in [dissection] may be [None]
     - [inbox_snapshot] never changes once the game is created
 *)
