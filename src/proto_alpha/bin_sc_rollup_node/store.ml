@@ -333,3 +333,27 @@ module Last_cemented_commitment_hash = Make_mutable_value (struct
 
   let value_encoding = Sc_rollup.Commitment_hash.encoding
 end)
+
+module OngoingGameRepr = struct
+  let path = ["game"]
+
+  type value = {
+    state : Sc_rollup.Game.t;
+    starting_level : Raw_level.t;
+    last_move_level : Raw_level.t;
+  }
+
+  let value_encoding =
+    let open Data_encoding in
+    conv
+      (fun {state; starting_level; last_move_level} ->
+        (state, starting_level, last_move_level))
+      (fun (state, starting_level, last_move_level) ->
+        {state; starting_level; last_move_level})
+    @@ obj3
+         (req "state" Sc_rollup.Game.encoding)
+         (req "starting_level" Raw_level.encoding)
+         (req "last_move_level" Raw_level.encoding)
+end
+
+module OngoingGame = Make_mutable_value (OngoingGameRepr)

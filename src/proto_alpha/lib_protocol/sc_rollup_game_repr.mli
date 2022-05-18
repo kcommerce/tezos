@@ -201,6 +201,8 @@ type t = {
 (** Return the other player *)
 val opponent : player -> player
 
+val player_equal : player -> player -> bool
+
 val encoding : t Data_encoding.t
 
 val pp : Format.formatter -> t -> unit

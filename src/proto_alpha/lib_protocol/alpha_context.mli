@@ -2612,11 +2612,15 @@ module Sc_rollup : sig
 
     type player = Alice | Bob
 
+    val player_equal : player -> player -> bool
+
     type t = {
       turn : player;
       inbox_snapshot : Inbox.t;
       dissection : (State_hash.t option * Tick.t) list;
     }
+
+    val encoding : t Data_encoding.t
 
     val opponent : player -> player
 
@@ -2627,6 +2631,8 @@ module Sc_rollup : sig
     type refutation = {choice : Tick.t; step : step}
 
     val pp_refutation : Format.formatter -> refutation -> unit
+
+    val refutation_encoding : refutation Data_encoding.t
 
     type reason = Conflict_resolved | Invalid_move | Timeout
 
@@ -2645,6 +2651,8 @@ module Sc_rollup : sig
     val pp_outcome : Format.formatter -> outcome -> unit
 
     val outcome_encoding : outcome Data_encoding.t
+
+    val play : t -> refutation -> (outcome, t) Either.t
   end
 
   val rpc_arg : t RPC_arg.t

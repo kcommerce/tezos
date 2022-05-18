@@ -26,23 +26,12 @@
 module type S = sig
   module PVM : Pvm.S
 
-  module Interpreter : Interpreter.S
-
-  module Commitment : Commitment.S with module PVM = PVM
-
-  module RPC_server : RPC_server.S with module PVM = PVM
-
-  module Refutation_game : Refutation_game.S with module PVM = PVM
+  val process :
+    Protocol.Alpha_context.Raw_level.t ->
+    Node_context.t ->
+    PVM.context ->
+    Layer1_services.operation list list ->
+    unit tzresult Lwt.t
 end
 
-module Make (PVM : Pvm.S) : S with module PVM = PVM = struct
-  module PVM = PVM
-  module Interpreter = Interpreter.Make (PVM)
-  module Commitment = Commitment.Make (PVM)
-  module RPC_server = RPC_server.Make (PVM)
-  module Refutation_game = Refutation_game.Make (PVM)
-end
-
-let pvm_of_kind : Protocol.Alpha_context.Sc_rollup.Kind.t -> (module Pvm.S) =
-  function
-  | Example_arith -> (module Arith_pvm)
+module Make (PVM : Pvm.S) : S with module PVM = PVM

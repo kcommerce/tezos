@@ -102,6 +102,9 @@ type t = {
   dissection : (State_hash.t option * Sc_rollup_tick_repr.t) list;
 }
 
+let player_equal p1 p2 =
+  match (p1, p2) with Alice, Alice -> true | Bob, Bob -> true | _, _ -> false
+
 let player_encoding =
   let open Data_encoding in
   union
@@ -401,7 +404,7 @@ let check pred =
     [stop_tick] is too small to make this possible, in which case it
     should be as long as possible. (If the distance is one we fail
     immediately as there is no possible legal dissection).
-    
+
     Then we check that [dissection] starts at the correct tick and state,
     and that it ends at the correct tick and with a different state to
     the current dissection.
@@ -439,10 +442,10 @@ let check_dissection start start_tick stop stop_tick dissection =
   traverse dissection
 
 (** We check firstly that the interval in question is a single tick.
-    
+
     Then we check the proof begins with the correct state and ends
     with a different state to the one in the current dissection.
-    
+
     Finally, we check that the proof itself is valid. *)
 let check_proof start start_tick stop stop_tick proof =
   let dist = Sc_rollup_tick_repr.distance start_tick stop_tick in

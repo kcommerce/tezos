@@ -72,7 +72,7 @@ module Make (PVM : Pvm.S) = struct
     let open Lwt_result_syntax in
     let {finalized; seen_before; head} = head_state in
     let cctxt = node_ctxt.Node_context.cctxt in
-    let* _operations =
+    let* operations =
       let*! () = emit_head_processing_event head_state in
       (* Avoid processing inbox again if it has been processed before for this head *)
       if seen_before then return None
@@ -109,7 +109,14 @@ module Make (PVM : Pvm.S) = struct
     (*
        At each block, there may be some refutation related actions to be performed.
     *)
-    return ()
+    Option.iter_es
+      (fun operations ->
+        if finalized then
+          let (Head {level; _}) = head_state.head in
+          let level = Protocol.Alpha_context.Raw_level.of_int32 level in
+          Components.Refutation_game.process level node_ctxt store operations
+        else return_unit)
+      operations
 
   (* [on_layer_1_chain_event node_ctxt store chain_event old_heads] processes a
      list of heads, coming from either a list of [old_heads] or from the current
