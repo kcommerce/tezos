@@ -3924,35 +3924,49 @@ let get_contracts_lib =
     ~bisect_ppx:false
 
 let _get_contracts =
-  List.filter_map
-    (fun proto ->
-      let ( let+ ) o f = Option.map f o in
-      let proto_version =
-        match Protocol.number proto with
-        | Alpha | Other -> Protocol.name proto
-        | V n -> Format.sprintf "%03d_%s" n (Protocol.name proto)
-      in
-      let name = "get_contracts_" ^ proto_version in
-      let main = Protocol.main proto in
-      let+ client = Protocol.client proto in
-      private_exe
-        name
-        ~path:"devtools/get_contracts"
-        ~synopsis:"A script to extract smart contracts from a node."
-        ~opam:""
-        ~deps:[main; client; get_contracts_lib]
-        ~modules:[name]
-        ~opens:
-          [
-            "Tezos_base__TzPervasives";
-            "Tezos_raw_protocol_" ^ proto_version;
-            "Tezos_protocol_environment_" ^ proto_version;
-            "Tezos_client_" ^ proto_version;
-          ]
-        ~static:false
-        ~release:false
-        ~bisect_ppx:false)
-    Protocol.active
+  let path = "devtools/get_contracts" in
+  Protocol.all_optionally
+    [
+      (fun proto ->
+        let proto_version =
+          match Protocol.number proto with
+          | Alpha | Other -> Protocol.name proto
+          | V n -> Format.sprintf "%03d_%s" n (Protocol.name proto)
+        in
+        let name = "get_contracts_" ^ proto_version in
+        let main_module = Format.sprintf "../%s/%s.ml" path name in
+        match (Protocol.status proto, Protocol.client proto) with
+        | Active, Some client ->
+            let main = Protocol.main proto in
+            if not @@ Sys.file_exists main_module then
+              ignore @@ Sys.command
+              @@ Format.sprintf
+                   "cp ../%s/get_contracts_alpha.ml %s"
+                   path
+                   main_module ;
+            Some
+              (private_exe
+                 name
+                 ~path
+                 ~synopsis:"A script to extract smart contracts from a node."
+                 ~opam:""
+                 ~deps:[main; client; get_contracts_lib]
+                 ~modules:[name]
+                 ~opens:
+                   [
+                     "Tezos_base__TzPervasives";
+                     "Tezos_raw_protocol_" ^ proto_version;
+                     "Tezos_protocol_environment_" ^ proto_version;
+                     "Tezos_client_" ^ proto_version;
+                   ]
+                 ~static:false
+                 ~release:false
+                 ~bisect_ppx:false)
+        | _ ->
+            if Sys.file_exists main_module then
+              ignore @@ Sys.command @@ Format.sprintf "rm %s" main_module ;
+            None);
+    ]
 
 let _s_packer =
   private_exe
