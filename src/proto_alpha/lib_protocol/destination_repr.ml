@@ -28,7 +28,7 @@
 type t = Contract of Contract_repr.t | Tx_rollup of Tx_rollup_repr.t
 (* If you add more cases to this type, please update the
    [test_compare_destination] test in
-   [test/unit/test_destinatino_repr.ml] to ensure that the compare
+   [test/unit/test_destination_repr.ml] to ensure that the compare
    function keeps its expected behavior to distinguish between
    implicit accounts and smart contracts. *)
 
