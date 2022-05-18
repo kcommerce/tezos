@@ -216,16 +216,20 @@ let initial inbox ~(parent : Commitment.t) ~(child : Commitment.t) ~refuter
     ~defender =
   let alice, _ = Index.normalize (refuter, defender) in
   let alice_to_play = Staker.equal alice refuter in
-  let tick = Sc_rollup_tick_repr.of_number_of_ticks child.number_of_ticks in
+  let open Sc_rollup_tick_repr in
+  let tick = of_number_of_ticks child.number_of_ticks in
   {
     turn = (if alice_to_play then Alice else Bob);
     inbox_snapshot = inbox;
     dissection =
-      [
-        (Some parent.compressed_state, Sc_rollup_tick_repr.initial);
-        (Some child.compressed_state, tick);
-        (None, Sc_rollup_tick_repr.next tick);
-      ];
+      (if equal tick initial then
+       [(Some child.compressed_state, initial); (None, next initial)]
+      else
+        [
+          (Some parent.compressed_state, initial);
+          (Some child.compressed_state, tick);
+          (None, next tick);
+        ]);
   }
 
 type step =

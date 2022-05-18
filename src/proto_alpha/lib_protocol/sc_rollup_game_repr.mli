@@ -188,7 +188,7 @@ type player = Alice | Bob
 
     Invariants:
     -----------
-    - [dissection] must contain at least 3 values
+    - [dissection] must contain at least 2 values
     - only the last value in [dissection] may be [None]
     - [inbox_snapshot] never changes once the game is created
 *)

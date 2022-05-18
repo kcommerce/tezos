@@ -46,6 +46,7 @@ type error +=
   | (* `Temporary *) Sc_rollup_no_game
   | (* `Temporary *) Sc_rollup_staker_in_game
   | (* `Temporary *) Sc_rollup_timeout_level_not_reached
+  | (* `Temporary *) Sc_rollup_state_change_on_zero_tick_commitment
 
 let () =
   register_error_kind
@@ -66,6 +67,15 @@ let () =
     Data_encoding.unit
     (function Sc_rollup_staker_in_game -> Some () | _ -> None)
     (fun () -> Sc_rollup_staker_in_game) ;
+  register_error_kind
+    `Temporary
+    ~id:"Sc_rollup_state_change_on_zero_tick_commitment"
+    ~title:"Attempt to commit zero ticks with state change"
+    ~description:"Attempt to commit zero ticks with state change"
+    Data_encoding.unit
+    (function
+      | Sc_rollup_state_change_on_zero_tick_commitment -> Some () | _ -> None)
+    (fun () -> Sc_rollup_state_change_on_zero_tick_commitment) ;
   register_error_kind
     `Temporary
     ~id:"Sc_rollup_timeout_level_not_reached"
@@ -567,17 +577,36 @@ let assert_commitment_frequency ctxt rollup commitment =
   then return ctxt
   else fail Sc_rollup_bad_inbox_level
 
-(** Check invariants on [inbox_level], enforcing overallocation of storage and
-    regularity of block prorudction.
+let assert_same_hash_as_predecessor ctxt rollup (commitment : Commitment.t) =
+  let open Lwt_tzresult_syntax in
+  let* pred, ctxt =
+    get_commitment_internal ctxt rollup commitment.predecessor
+  in
+  if
+    Sc_rollup_repr.State_hash.equal
+      pred.compressed_state
+      commitment.compressed_state
+  then return ctxt
+  else fail Sc_rollup_state_change_on_zero_tick_commitment
 
-     The constants used by [assert_refine_conditions_met] must be chosen such
-     that the maximum cost of storage allocated by each staker at most the size
-     of their deposit.
- *)
+(** Check invariants on [inbox_level], enforcing overallocation of storage,
+    regularity of block production, and a special case of a zero-tick
+    commit where the state must be the same as the predecessor.
+
+    The constants used by [assert_refine_conditions_met] must be chosen such
+    that the maximum cost of storage allocated by each staker at most the size
+    of their deposit. *)
 let assert_refine_conditions_met ctxt rollup lcc commitment =
   let open Lwt_tzresult_syntax in
   let* ctxt = assert_commitment_not_too_far_ahead ctxt rollup lcc commitment in
-  assert_commitment_frequency ctxt rollup commitment
+  let* ctxt = assert_commitment_frequency ctxt rollup commitment in
+  if
+    Int32.equal
+      (Sc_rollup_repr.Number_of_ticks.to_int32
+         Commitment.(commitment.number_of_ticks))
+      0l
+  then assert_same_hash_as_predecessor ctxt rollup commitment
+  else return ctxt
 
 let refine_stake ctxt rollup staker commitment =
   let open Lwt_tzresult_syntax in
