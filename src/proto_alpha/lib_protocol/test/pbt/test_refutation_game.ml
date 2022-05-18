@@ -526,15 +526,14 @@ struct
         Sc_rollup_tick_repr.(tick' = tick))
     >>= fun (t, s) -> Lwt.return (Some s, t)
 
-  (** [dissection_of_section start_tick start_state stop_tick] 
-  creates a dissection with t most 32 number of pieces that are (roughly) equal
-   and whose states are computed by evaluating.
-    Note that  the last piece can be a lot longer than the others.
+  (** [dissection_of_section start_tick start_state stop_tick] creates a 
+  dissection with at most 32 pieces that are (roughly) equal spaced and whose 
+  states are computed by running the eval function until the correct tick. Note 
+  that  the last piece can be as much as 31 ticks longer than the others.
     *)
   let dissection_of_section start_tick start_state stop_tick =
     match start_state with
     | Some start_state ->
-        let* _start_hash = PVM.state_hash start_state in
         let start_int =
           match Sc_rollup_tick_repr.to_int start_tick with
           | None -> assert false
@@ -662,32 +661,7 @@ struct
     Lwt.return
     @@ not (Option.equal ( = ) state (Option.map of_PVM_state_hash new_hash))
 
-  (* let random_dissection start_at start_state stop_at :
-       (Sc_rollup_repr.State_hash.t option * Sc_rollup_tick_repr.t) list option
-       Lwt.t =
-     match start_state with
-     | Some start_state ->
-         let rec aux dissection start_at =
-           if start_at >= stop_at then Lwt.return @@ Some (List.rev dissection)
-           else
-             let (tick, _) = random_section start_at stop_at in
-             if tick = stop_at && List.length dissection < 3 then
-               aux dissection start_at
-             else
-               let hash =
-                 Sc_rollup_repr.State_hash.of_bytes_exn @@ Bytes.create 32
-               in
-               aux ((Some hash, tick) :: dissection) tick
-         in
-
-         if
-           Compare.Int.(
-             Z.to_int (Sc_rollup_tick_repr.distance stop_at start_at) > 1)
-         then aux [(Some (of_PVM_state_hash start_state), start_at)] start_at
-         else Lwt.return None
-     | None -> assert false *)
-
-  (** this function assmbles a random decision from a given dissection.
+  (** this function assembles a random decision from a given dissection.
     It first picks a random section from the dissection and modifies randomly
      its states.
     If the length of this section is one tick the returns a conclusion with
@@ -739,21 +713,13 @@ struct
           (Some
              Sc_rollup_game_repr.{choice = start; step = Dissection dissection})
 
-  (** technical params for machine directed strategies, branching is the number
-   of pieces for a dissection failing level*)
-  type parameters = {
-    branching : int;
-    failing_level : int;
-    max_failure : int option;
-  }
-
   type checkpoint = Sc_rollup_tick_repr.t -> bool
 
   (** there are two kinds of strategies, random and machine dirrected by a
   params and a checkpoint*)
   type strategy =
     | Random of Signature.public_key_hash
-    | MachineDirected of parameters * checkpoint * Signature.public_key_hash
+    | MachineDirected of checkpoint * Signature.public_key_hash
 
   (**
   [find_conflict dissection] finds the section (if it exists) in a dissection that 
@@ -881,7 +847,7 @@ struct
           signature;
           next_move = (fun game -> random_decision game.dissection);
         }
-    | MachineDirected (_, checkpoint, signature) ->
+    | MachineDirected (checkpoint, signature) ->
         machine_directed_committer checkpoint signature
 
   (** This builds a refuter client from a strategy.
@@ -896,7 +862,7 @@ struct
           signature;
           next_move = (fun game -> random_decision game.dissection);
         }
-    | MachineDirected (_, _, signature) -> machine_directed_refuter signature
+    | MachineDirected (_, signature) -> machine_directed_refuter signature
 
   (** [test_strategies committer_strategy refuter_strategy expectation]
     runs a game based oin the two given strategies and checks that the
@@ -911,8 +877,7 @@ struct
   (** This is a commuter client having a perfect strategy*)
   let perfect_committer signature =
     MachineDirected
-      ( {failing_level = 0; branching = 2; max_failure = None},
-        (fun tick ->
+      ( (fun tick ->
           let t0 = 20 + Random.int 100 in
           assume_some (Sc_rollup_tick_repr.to_int tick) @@ fun tick ->
           tick >= t0),
@@ -920,26 +885,9 @@ struct
   (** This is a refuter client having a perfect strategy*)
 
   let perfect_refuter signature =
-    MachineDirected
-      ( {failing_level = 0; branching = 2; max_failure = None},
-        (fun _ -> assert false),
-        signature )
+    MachineDirected ((fun _ -> assert false), signature)
 
   (** This is a commuter client having a strategy that forgets a tick*)
-  let failing_committer max_failure signature =
-    MachineDirected
-      ( {failing_level = 1; branching = 2; max_failure},
-        (fun tick ->
-          let s = match max_failure with None -> 20 | Some x -> x in
-          assume_some (Sc_rollup_tick_repr.to_int tick) @@ fun tick -> tick >= s),
-        signature )
-
-  (** This is a commuter client having a strategy that forgets a tick*)
-  let failing_refuter max_failure signature =
-    MachineDirected
-      ( {failing_level = 1; branching = 2; max_failure},
-        (fun _ -> assert false),
-        signature )
 
   (** the possible expectation functions *)
   let commiter_wins x =
