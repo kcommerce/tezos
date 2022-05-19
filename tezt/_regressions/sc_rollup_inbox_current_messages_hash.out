@@ -2,8 +2,8 @@ sc_rollup_inbox_current_messages_hash.out
 
 ./tezos-client --wait none originate sc rollup from '[PUBLIC_KEY_HASH]' of kind arith booting with  --burn-cap 9999999
 Node is bootstrapped.
-Estimated gas: 1600.648 units (will add 100 for safety)
-Estimated storage: 6522 bytes added (will add 20 for safety)
+Estimated gas: 1600.644 units (will add 100 for safety)
+Estimated storage: 6521 bytes added (will add 20 for safety)
 Operation successfully injected in the node.
 Operation hash is '[OPERATION_HASH]'
 NOT waiting for the operation to be included.
@@ -16,23 +16,23 @@ This sequence of operations was run:
     Fee to the baker: ꜩ0.000402
     Expected counter: 1
     Gas limit: 1701
-    Storage limit: 6542 bytes
+    Storage limit: 6541 bytes
     Balance updates:
       [PUBLIC_KEY_HASH] ... -ꜩ0.000402
       payload fees(the block proposer) ....... +ꜩ0.000402
     Originate smart contract rollup of kind arith with boot sector ''
       This smart contract rollup origination was successfully applied
-      Consumed gas: 1600.648
-      Storage size: 6522 bytes
+      Consumed gas: 1600.644
+      Storage size: 6521 bytes
       Address: [SC_ROLLUP_HASH]
       Balance updates:
-        [PUBLIC_KEY_HASH] ... -ꜩ1.6305
-        storage fees ........................... +ꜩ1.6305
+        [PUBLIC_KEY_HASH] ... -ꜩ1.63025
+        storage fees ........................... +ꜩ1.63025
 
 
 ./tezos-client --wait none send sc rollup message 'text:["hello, message number 0", "hello, message number 1", "hello, message number 2", "hello, message number 3", "hello, message number 4"]' from bootstrap1 to '[SC_ROLLUP_HASH]'
 Node is bootstrapped.
-Estimated gas: 1654.974 units (will add 100 for safety)
+Estimated gas: 1654.968 units (will add 100 for safety)
 Estimated storage: no bytes added
 Operation successfully injected in the node.
 Operation hash is '[OPERATION_HASH]'
@@ -43,16 +43,16 @@ and/or an external block explorer to make sure that it has been included.
 This sequence of operations was run:
   Manager signed operations:
     From: [PUBLIC_KEY_HASH]
-    Fee to the baker: ꜩ0.00058
+    Fee to the baker: ꜩ0.000579
     Expected counter: 2
     Gas limit: 1755
     Storage limit: 0 bytes
     Balance updates:
-      [PUBLIC_KEY_HASH] ... -ꜩ0.00058
-      payload fees(the block proposer) ....... +ꜩ0.00058
+      [PUBLIC_KEY_HASH] ... -ꜩ0.000579
+      payload fees(the block proposer) ....... +ꜩ0.000579
     Add a message to the inbox of the smart contract rollup at address [SC_ROLLUP_HASH]
       This operation sending a message to a smart contract rollup was successfully applied
-      Consumed gas: 1655.102
+      Consumed gas: 1655.096
       Resulting inbox state: 
          rollup = [SC_ROLLUP_HASH]
          level = 3
@@ -69,7 +69,7 @@ This sequence of operations was run:
 
 ./tezos-client --wait none send sc rollup message 'text:["hello, message number 5", "hello, message number 6", "hello, message number 7", "hello, message number 8", "hello, message number 9", "hello, message number 10"]' from bootstrap1 to '[SC_ROLLUP_HASH]'
 Node is bootstrapped.
-Estimated gas: 1656.001 units (will add 100 for safety)
+Estimated gas: 1655.995 units (will add 100 for safety)
 Estimated storage: no bytes added
 Operation successfully injected in the node.
 Operation hash is '[OPERATION_HASH]'
@@ -80,16 +80,16 @@ and/or an external block explorer to make sure that it has been included.
 This sequence of operations was run:
   Manager signed operations:
     From: [PUBLIC_KEY_HASH]
-    Fee to the baker: ꜩ0.000608
+    Fee to the baker: ꜩ0.000607
     Expected counter: 3
-    Gas limit: 1757
+    Gas limit: 1756
     Storage limit: 0 bytes
     Balance updates:
-      [PUBLIC_KEY_HASH] ... -ꜩ0.000608
-      payload fees(the block proposer) ....... +ꜩ0.000608
+      [PUBLIC_KEY_HASH] ... -ꜩ0.000607
+      payload fees(the block proposer) ....... +ꜩ0.000607
     Add a message to the inbox of the smart contract rollup at address [SC_ROLLUP_HASH]
       This operation sending a message to a smart contract rollup was successfully applied
-      Consumed gas: 1656.129
+      Consumed gas: 1656.123
       Resulting inbox state: 
          rollup = [SC_ROLLUP_HASH]
          level = 4
@@ -107,7 +107,7 @@ This sequence of operations was run:
 
 ./tezos-client --wait none send sc rollup message 'text:[]' from bootstrap1 to '[SC_ROLLUP_HASH]'
 Node is bootstrapped.
-Estimated gas: 1651.453 units (will add 100 for safety)
+Estimated gas: 1651.447 units (will add 100 for safety)
 Estimated storage: no bytes added
 Operation successfully injected in the node.
 Operation hash is '[OPERATION_HASH]'
@@ -118,16 +118,16 @@ and/or an external block explorer to make sure that it has been included.
 This sequence of operations was run:
   Manager signed operations:
     From: [PUBLIC_KEY_HASH]
-    Fee to the baker: ꜩ0.000445
+    Fee to the baker: ꜩ0.000444
     Expected counter: 4
     Gas limit: 1752
     Storage limit: 0 bytes
     Balance updates:
-      [PUBLIC_KEY_HASH] ... -ꜩ0.000445
-      payload fees(the block proposer) ....... +ꜩ0.000445
+      [PUBLIC_KEY_HASH] ... -ꜩ0.000444
+      payload fees(the block proposer) ....... +ꜩ0.000444
     Add a message to the inbox of the smart contract rollup at address [SC_ROLLUP_HASH]
       This operation sending a message to a smart contract rollup was successfully applied
-      Consumed gas: 1651.453
+      Consumed gas: 1651.447
       Resulting inbox state: 
          rollup = [SC_ROLLUP_HASH]
          level = 5

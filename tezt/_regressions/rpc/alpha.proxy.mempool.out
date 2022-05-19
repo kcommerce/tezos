@@ -3410,7 +3410,7 @@ curl -s 'http://localhost:[PORT]/describe/chains/main/mempool?recurse=yes'
                       },
                       "alpha.rollup_address": {
                         "title": "A smart contract rollup address",
-                        "description": "A smart contract rollup is identified by a base58 address starting with scr1",
+                        "description": "A smart contract rollup is identified by a base58 address starting with sc1",
                         "$ref": "#/definitions/unistring"
                       },
                       "alpha.scripted.contracts": {
@@ -13693,7 +13693,7 @@ curl -s 'http://localhost:[PORT]/describe/chains/main/mempool?recurse=yes'
                       },
                       "alpha.rollup_address": {
                         "title": "A smart contract rollup address",
-                        "description": "A smart contract rollup is identified by a base58 address starting with scr1",
+                        "description": "A smart contract rollup is identified by a base58 address starting with sc1",
                         "$ref": "#/definitions/unistring"
                       },
                       "alpha.scripted.contracts": {

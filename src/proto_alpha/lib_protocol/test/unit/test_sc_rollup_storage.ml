@@ -102,7 +102,7 @@ let assert_fails_with_missing_rollup ~loc op =
     ~loc
     (op ctxt rollup)
     (* Hash of empty sequence *)
-    "Rollup scr1Ew52VCdi6nF1JuokRGMqfmSeiAEXymW2m does not exist"
+    "Rollup sc1AfDSDDC7ECSoHYr1jSUQbXmsVY3THdLfD does not exist"
 
 (** Assert commitment hash equality.
 
