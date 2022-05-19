@@ -2,69 +2,73 @@
    We would like to shadow this module with our own implementation in a smarter
    way.
 *)
-include Partial_table
+module Reference = struct
+  open Types
+  open Values
 
-(*
+  type size = int32
+  type index = int32
+  type count = int32
 
-open Types
-open Values
+  type table = {mutable ty : table_type; mutable content : ref_ array}
+  type t = table
 
-type size = int32
-type index = int32
-type count = int32
+  exception Type
+  exception Bounds
+  exception SizeOverflow
+  exception SizeLimit
+  exception OutOfMemory
 
-type table = {mutable ty : table_type; mutable content : ref_ array}
-type t = table
+  let valid_limits {min; max} =
+    match max with
+    | None -> true
+    | Some m -> I32.le_u min m
 
-exception Type
-exception Bounds
-exception SizeOverflow
-exception SizeLimit
-exception OutOfMemory
+  let create size r =
+    try Lib.Array32.make size r
+    with Out_of_memory | Invalid_argument _ -> raise OutOfMemory
 
-let valid_limits {min; max} =
-  match max with
-  | None -> true
-  | Some m -> I32.le_u min m
+  let alloc (TableType (lim, _) as ty) r =
+    if not (valid_limits lim) then raise Type;
+    {ty; content = create lim.min r}
 
-let create size r =
-  try Lib.Array32.make size r
-  with Out_of_memory | Invalid_argument _ -> raise OutOfMemory
+  let size tab =
+    Lib.Array32.length tab.content
 
-let alloc (TableType (lim, _) as ty) r =
-  if not (valid_limits lim) then raise Type;
-  {ty; content = create lim.min r}
+  let type_of tab =
+    tab.ty
 
-let size tab =
-  Lib.Array32.length tab.content
+  let grow tab delta r =
+    let TableType (lim, t) = tab.ty in
+    assert (lim.min = size tab);
+    let old_size = lim.min in
+    let new_size = Int32.add old_size delta in
+    if I32.gt_u old_size new_size then raise SizeOverflow else
+      let lim' = {lim with min = new_size} in
+      if not (valid_limits lim') then raise SizeLimit else
+        let after = create new_size r in
+        Array.blit tab.content 0 after 0 (Array.length tab.content);
+        tab.ty <- TableType (lim', t);
+        tab.content <- after
 
-let type_of tab =
-  tab.ty
+  let load tab i =
+    try Lib.Array32.get tab.content i with Invalid_argument _ -> raise Bounds
 
-let grow tab delta r =
-  let TableType (lim, t) = tab.ty in
-  assert (lim.min = size tab);
-  let old_size = lim.min in
-  let new_size = Int32.add old_size delta in
-  if I32.gt_u old_size new_size then raise SizeOverflow else
-  let lim' = {lim with min = new_size} in
-  if not (valid_limits lim') then raise SizeLimit else
-  let after = create new_size r in
-  Array.blit tab.content 0 after 0 (Array.length tab.content);
-  tab.ty <- TableType (lim', t);
-  tab.content <- after
+  let store tab i r =
+    let TableType (lim, t) = tab.ty in
+    if type_of_ref r <> t then raise Type;
+    try Lib.Array32.set tab.content i r with Invalid_argument _ -> raise Bounds
 
-let load tab i =
-  try Lib.Array32.get tab.content i with Invalid_argument _ -> raise Bounds
+  let blit tab offset rs =
+    let data = Array.of_list rs in
+    try Lib.Array32.blit data 0l tab.content offset (Lib.Array32.length data)
+    with Invalid_argument _ -> raise Bounds
 
-let store tab i r =
-  let TableType (lim, t) = tab.ty in
-  if type_of_ref r <> t then raise Type;
-  try Lib.Array32.set tab.content i r with Invalid_argument _ -> raise Bounds
+end
 
-let blit tab offset rs =
-  let data = Array.of_list rs in
-  try Lib.Array32.blit data 0l tab.content offset (Lib.Array32.length data)
-  with Invalid_argument _ -> raise Bounds
+let select_impl: [`Partial | `Reference] -> (module Table_sig.S) = function
+  `Partial -> (module Partial_table)
+| `Reference -> (module Reference)
 
-*)
+
+include (val (select_impl `Partial))
