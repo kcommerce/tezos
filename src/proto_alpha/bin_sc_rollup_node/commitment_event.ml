@@ -32,10 +32,6 @@ open Alpha_context
 module Simple = struct
   include Internal_event.Simple
 
-  type operation_type = [`Publish | `Cement | `Store]
-
-  type operation_result = [`Injected | `Backtracked | `Skipped | `Failed]
-
   let section = ["sc_rollup_node"; "commitment"]
 
   let event_name ?op_result op_type =
@@ -166,6 +162,27 @@ module Simple = struct
       ("level", Raw_level.encoding)
       ("predecessor_hash", Sc_rollup.Commitment_hash.encoding)
       ("lcc_hash", Sc_rollup.Commitment_hash.encoding)
+
+  let commitment_stored = commitment_event `Store
+
+  let publish_commitment_injected =
+    commitment_event `Publish ~op_result:`Injected
+
+  let publish_commitment_backtracked =
+    commitment_event `Publish ~op_result:`Backtracked
+
+  let publish_commitment_skipped = commitment_event `Publish ~op_result:`Skipped
+
+  let publish_commitment_failed = commitment_event `Publish ~op_result:`Failed
+
+  let cement_commitment_injected = commitment_event `Cement ~op_result:`Injected
+
+  let cement_commitment_backtracked =
+    commitment_event `Cement ~op_result:`Backtracked
+
+  let cement_commitment_skipped = commitment_event `Cement ~op_result:`Skipped
+
+  let cement_commitment_failed = commitment_event `Cement ~op_result:`Failed
 end
 
 let starting = Simple.(emit starting)
@@ -174,7 +191,7 @@ let stopping = Simple.(emit stopping)
 
 open Sc_rollup.Commitment
 
-let emit_commitment_event ?op_result op_type
+let emit_commitment_event f
     {
       predecessor;
       inbox_level;
@@ -184,14 +201,12 @@ let emit_commitment_event ?op_result op_type
     } =
   Simple.(
     emit
-      (commitment_event ?op_result op_type)
+      f
       ( predecessor,
         inbox_level,
         compressed_state,
         number_of_messages,
         number_of_ticks ))
-
-let commitment_stored = emit_commitment_event `Store
 
 let commitment_will_not_be_published lcc_level
     {
@@ -211,28 +226,31 @@ let commitment_will_not_be_published lcc_level
         number_of_messages,
         number_of_ticks ))
 
+let commitment_stored = emit_commitment_event Simple.commitment_stored
+
 let publish_commitment_injected =
-  emit_commitment_event `Publish ~op_result:`Injected
+  emit_commitment_event Simple.publish_commitment_injected
 
 let publish_commitment_skipped =
-  emit_commitment_event `Publish ~op_result:`Skipped
+  emit_commitment_event Simple.publish_commitment_skipped
 
 let publish_commitment_backtracked =
-  emit_commitment_event `Publish ~op_result:`Backtracked
+  emit_commitment_event Simple.publish_commitment_backtracked
 
 let publish_commitment_failed =
-  emit_commitment_event `Publish ~op_result:`Failed
+  emit_commitment_event Simple.publish_commitment_failed
 
 let cement_commitment_injected =
-  emit_commitment_event `Cement ~op_result:`Injected
+  emit_commitment_event Simple.cement_commitment_injected
 
 let cement_commitment_skipped =
-  emit_commitment_event `Cement ~op_result:`Skipped
+  emit_commitment_event Simple.cement_commitment_skipped
 
 let cement_commitment_backtracked =
-  emit_commitment_event `Cement ~op_result:`Backtracked
+  emit_commitment_event Simple.cement_commitment_backtracked
 
-let cement_commitment_failed = emit_commitment_event `Cement ~op_result:`Failed
+let cement_commitment_failed =
+  emit_commitment_event Simple.cement_commitment_failed
 
 let last_cemented_commitment_updated head level =
   Simple.(emit last_cemented_commitment_updated (head, level))
