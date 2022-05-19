@@ -331,7 +331,7 @@ module Make (PVM : Pvm.S) : S with module PVM = PVM = struct
                 commitment_hash
                 published_at_level
             in
-            Commitment_event.publish_commitment_successful commitment
+            Commitment_event.publish_commitment_injected commitment
         | Failed (Sc_rollup_publish_manager_kind, _errors) ->
             Commitment_event.publish_commitment_failed commitment
         | Backtracked (Sc_rollup_publish_result _, _errors) ->
@@ -416,7 +416,7 @@ module Make (PVM : Pvm.S) : S with module PVM = PVM = struct
           let* () =
             Store.Last_cemented_commitment_hash.set store commitment_hash
           in
-          Commitment_event.cement_commitment_successful commitment
+          Commitment_event.cement_commitment_injected commitment
       | Failed (Sc_rollup_cement_manager_kind, _errors) ->
           Commitment_event.cement_commitment_failed commitment
       | Backtracked (Sc_rollup_cement_result _, _errors) ->

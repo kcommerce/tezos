@@ -84,13 +84,13 @@ module Simple = struct
       ("number_of_messages", Sc_rollup.Number_of_messages.encoding)
       ("number_of_ticks", Sc_rollup.Number_of_ticks.encoding)
 
-  let publish_commitment_successful =
+  let publish_commitment_injected =
     declare_5
       ~section
-      ~name:"sc_rollup_node_publish_commitment_successful"
+      ~name:"sc_rollup_node_publish_commitment_injected"
       ~msg:
-        "Commitment was published - predecessor: {predecessor}, inbox_level: \
-         {inbox_level}, compressed_state: {compressed_state}, \
+        "Pusblishing Commitment was injected - predecessor: {predecessor}, \
+         inbox_level: {inbox_level}, compressed_state: {compressed_state}, \
          number_of_messages: {number_of_messages}, number_of_ticks: \
          {number_of_ticks}"
       ~level:Notice
@@ -148,13 +148,13 @@ module Simple = struct
       ("number_of_messages", Sc_rollup.Number_of_messages.encoding)
       ("number_of_ticks", Sc_rollup.Number_of_ticks.encoding)
 
-  let cement_commitment_successful =
+  let cement_commitment_injected =
     declare_5
       ~section
-      ~name:"sc_rollup_node_cement_commitment_successful"
+      ~name:"sc_rollup_node_cement_commitment_injected"
       ~msg:
-        "Commitment was cemented - predecessor: {predecessor}, inbox_level: \
-         {inbox_level}, compressed_state: {compressed_state}, \
+        "Cementing Commitment was injected - predecessor: {predecessor}, \
+         inbox_level: {inbox_level}, compressed_state: {compressed_state}, \
          number_of_messages: {number_of_messages}, number_of_ticks: \
          {number_of_ticks}"
       ~level:Notice
@@ -290,7 +290,7 @@ let commitment_will_not_be_published lcc_level
         number_of_messages,
         number_of_ticks ))
 
-let publish_commitment_successful
+let publish_commitment_injected
     {
       predecessor;
       inbox_level;
@@ -300,7 +300,7 @@ let publish_commitment_successful
     } =
   Simple.(
     emit
-      publish_commitment_successful
+      publish_commitment_injected
       ( predecessor,
         inbox_level,
         compressed_state,
@@ -358,7 +358,7 @@ let publish_commitment_failed
         number_of_messages,
         number_of_ticks ))
 
-let cement_commitment_successful
+let cement_commitment_injected
     {
       predecessor;
       inbox_level;
@@ -368,7 +368,7 @@ let cement_commitment_successful
     } =
   Simple.(
     emit
-      cement_commitment_successful
+      cement_commitment_injected
       ( predecessor,
         inbox_level,
         compressed_state,
