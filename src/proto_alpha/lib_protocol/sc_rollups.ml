@@ -71,12 +71,14 @@ let string_of_kind k =
 
 let pp fmt k = Format.fprintf fmt "%s" (string_of_kind k)
 
-module type PVM_proof = sig
-  module PVM : PVM.S
-  val this : PVM.proof
-end
+(* Add a case here for each new PVM implementation that requires proofs
+   in L1 operations (needed for refutation game). *)
+type pvm_proof =
+  | Example_arith_proof of Sc_rollup_arith.ProtocolImplementation.proof
 
-let wrapped_proof_encoding =
+let kind_of_proof = function Example_arith_proof _ -> Kind.Example_arith
+
+let pvm_proof_encoding =
   Data_encoding.(
     union
       ~tag_size:`Uint8
@@ -84,16 +86,7 @@ let wrapped_proof_encoding =
         case
           ~title:"Arithmetic PVM proof"
           (Tag 0)
-          (Sc_rollup_arith.ProtocolImplementation.proof_encoding)
-          (function pvm_proof ->
-            let (module P : PVM_proof) = pvm_proof in
-            match kind_of_string P.PVM.name with
-            | Some Kind.Example_arith -> Some P.this
-            | _ -> None)
-          (fun proof -> (module struct
-              module PVM = Sc_rollup_arith.ProtocolImplementation
-              let this = proof
-            end : PVM_proof))
-      ]
-    )
-  
+          Sc_rollup_arith.ProtocolImplementation.proof_encoding
+          (function Example_arith_proof proof -> Some proof)
+          (fun proof -> Example_arith_proof proof);
+      ])

@@ -107,8 +107,8 @@ let stop p =
 
 let kinded_hash_equal a b =
   match (a, b) with
-  | (`Node x, `Node y) -> Context_hash.equal x y
-  | (`Value x, `Value y) -> Context_hash.equal x y
+  | `Node x, `Node y -> Context_hash.equal x y
+  | `Value x, `Value y -> Context_hash.equal x y
   | _ -> false
 
 let tree_proof proof f =
@@ -122,22 +122,22 @@ let valid pvm_ops snapshot commit_level p =
   | Computation_step {step; not_input} ->
       let hashes_match = kinded_hash_equal step.before not_input.before in
       let* _ = tree_proof step (pvm_ops.eval None) in
-      let* (_, not_input_result) = tree_proof not_input pvm_ops.expect_input in
+      let* _, not_input_result = tree_proof not_input pvm_ops.expect_input in
       return (hashes_match && Option.is_none not_input_result)
   | Input_step {step; input; inbox} ->
       let hashes_match = kinded_hash_equal step.before input.before in
-      let* (_, inbox_location) = tree_proof input pvm_ops.expect_input in
-      let* (l, n) = from_option inbox_location in
-      let* (l, n, payload_opt) =
+      let* _, inbox_location = tree_proof input pvm_ops.expect_input in
+      let* l, n = from_option inbox_location in
+      let* l, n, payload_opt =
         Sc_rollup_inbox_repr.Proof.valid (l, Z.succ n) snapshot inbox
       in
       let* payload = from_option payload_opt in
       let* _ = tree_proof step (pvm_ops.eval (Some (l, n, payload))) in
       return (hashes_match && not (Raw_level_repr.equal l commit_level))
   | Blocked_step {input; inbox} -> (
-      let* (_, inbox_location) = tree_proof input pvm_ops.expect_input in
+      let* _, inbox_location = tree_proof input pvm_ops.expect_input in
       let* loc = from_option inbox_location in
-      let* (l, _, payload_opt) =
+      let* l, _, payload_opt =
         Sc_rollup_inbox_repr.Proof.valid loc snapshot inbox
       in
       match payload_opt with

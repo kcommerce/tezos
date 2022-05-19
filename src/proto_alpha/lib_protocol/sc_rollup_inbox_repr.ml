@@ -635,7 +635,7 @@ module Proof = struct
                (proof.level.current_messages_hash ())
                proof.message_proof.before
         then
-          let* (_, payload) =
+          let* _, payload =
             drop_error
             @@ Context.verify_tree_proof proof.message_proof (message_payload n)
           in
