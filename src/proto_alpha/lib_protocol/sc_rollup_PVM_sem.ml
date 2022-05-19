@@ -58,6 +58,16 @@ type input = {
   payload : string;
 }
 
+(** The PVM's current input expectations. [No_input_required] is if the
+    machine is busy and has no need for new input. [Initial] will be if
+    the machine has never received an input so expects the very first
+    item in the inbox. [First_after (level, counter)] will expect
+    whatever comes next after that position in the inbox. *)
+type input_request =
+  | No_input_required
+  | Initial
+  | First_after of Raw_level.t * Z.t
+
 module type S = sig
   (**
 
@@ -79,12 +89,24 @@ module type S = sig
   type hash = State_hash.t
 
   (** [proof_start_state proof] returns the initial state hash of the
-     [proof] execution step. *)
+      [proof] execution step. *)
   val proof_start_state : proof -> hash
 
   (** [proof_stop_state proof] returns the final state hash of the
-     [proof] execution step. *)
-  val proof_stop_state : proof -> hash
+      [proof] execution step. *)
+  val proof_stop_state : proof -> hash option
+
+  (** [proof_input_requested proof] returns the [input_request] status
+      of the start state of the proof, as given by [is_input_state].
+      This must match with the inbox proof to complete a valid
+      refutation game proof. *)
+  val proof_input_requested : proof -> input_request
+
+  (** [proof_input_given proof] returns the [input], if any, provided to
+      the start state of the proof using the [set_input] function. If
+      [None], the proof is an [eval] step instead. This must match with
+      the inbox proof to complete a valid refutation game proof. *)
+  val proof_input_given : proof -> input option
 
   (** [state_hash state] returns a compressed representation of [state]. *)
   val state_hash : state -> hash Lwt.t
@@ -94,24 +116,26 @@ module type S = sig
       should be enough to create an initial state. *)
   val initial_state : context -> string -> state Lwt.t
 
-  (** [is_input_state state] returns [Some (level, counter)] if [state] is
-      waiting for the input message that comes next to the message numbered
-      [counter] in the inbox of a given [level]. *)
-  val is_input_state : state -> (Raw_level.t * Z.t) option Lwt.t
+  (** [is_input_state state] returns the input expectations of the
+      [state]---does it need input, and if so how far through the inbox
+      has it read so far? *)
+  val is_input_state : state -> input_request Lwt.t
 
-  (** [set_input level n msg state] sets [msg] in [state] as
-     the next message to be processed. This input message is assumed
-     to be the number [n] in the inbox messages at the given
-     [level]. The input message must be the message next to the
-     previous message processed by the rollup. *)
+  (** [set_input (level, n, msg) state] sets [msg] in [state] as
+      the next message to be processed. This input message is assumed
+      to be the number [n] in the inbox messages at the given
+      [level]. The input message must be the message next to the
+      previous message processed by the rollup. *)
   val set_input : input -> state -> state Lwt.t
 
   (** [eval s0] returns a state [s1] resulting from the
        execution of an atomic step of the rollup at state [s0]. *)
   val eval : state -> state Lwt.t
 
-  (** [verify_proof input proof] returns [true] iff the [proof] is valid.
-      If the state is an input state, [input] is the hash of the input
-      message externally provided to the evaluation function. *)
-  val verify_proof : input:input option -> proof -> bool Lwt.t
+  (** This checks the proof. The proof contains four parameters, start
+      state, stop state, input requested and input given. As well as
+      running [verify_proof], the refutation game must check that those
+      four parameters correspond correctly to the refutation game itself
+      and the inbox proof. *)
+  val verify_proof : proof -> bool Lwt.t
 end
