@@ -89,6 +89,11 @@ let constants_mainnet =
     max_slashing_period = 2;
     frozen_deposits_percentage = 10;
     double_baking_punishment = Tez.(mul_exn one 640);
+    (* This is initially set equal to blocks_per_cycle to allow an entire
+       cycle to be requested.  If we deprecate requesting an entire cycle
+       (see https://gitlab.com/tezos/tezos/-/merge_requests/5082), then
+        we can lower this to ~100. *)
+    max_blocks_per_endorsement_rights_request = 8192;
     ratio_of_frozen_deposits_slashed_per_double_endorsement =
       {numerator = 1; denominator = 2};
     initial_seed = None;

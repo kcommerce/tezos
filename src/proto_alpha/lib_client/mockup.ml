@@ -67,6 +67,7 @@ module Protocol_constants_overrides = struct
     max_slashing_period : int option;
     frozen_deposits_percentage : int option;
     double_baking_punishment : Tez.t option;
+    max_blocks_per_endorsement_rights_request : int option;
     ratio_of_frozen_deposits_slashed_per_double_endorsement : Ratio.t option;
     cache_script_size : int option;
     cache_stake_distribution_cycles : int option;
@@ -136,6 +137,7 @@ module Protocol_constants_overrides = struct
                   c.max_slashing_period,
                   c.frozen_deposits_percentage,
                   c.double_baking_punishment,
+                  c.max_blocks_per_endorsement_rights_request,
                   c.ratio_of_frozen_deposits_slashed_per_double_endorsement,
                   c.chain_id,
                   c.timestamp,
@@ -197,6 +199,7 @@ module Protocol_constants_overrides = struct
                      max_slashing_period,
                      frozen_deposits_percentage,
                      double_baking_punishment,
+                     max_blocks_per_endorsement_rights_request,
                      ratio_of_frozen_deposits_slashed_per_double_endorsement,
                      chain_id,
                      timestamp,
@@ -259,6 +262,7 @@ module Protocol_constants_overrides = struct
           consensus_committee_size;
           consensus_threshold;
           double_baking_punishment;
+          max_blocks_per_endorsement_rights_request;
           ratio_of_frozen_deposits_slashed_per_double_endorsement;
           cache_script_size;
           cache_stake_distribution_cycles;
@@ -324,11 +328,12 @@ module Protocol_constants_overrides = struct
                   (opt "consensus_committee_size" int31)
                   (opt "consensus_threshold" int31))
                (merge_objs
-                  (obj8
+                  (obj9
                      (opt "minimal_participation_ratio" Ratio.encoding)
                      (opt "max_slashing_period" int31)
                      (opt "frozen_deposits_percentage" int31)
                      (opt "double_baking_punishment" Tez.encoding)
+                     (opt "max_blocks_per_endorsement_rights_request" int31)
                      (opt
                         "ratio_of_frozen_deposits_slashed_per_double_endorsement"
                         Ratio.encoding)
@@ -429,6 +434,8 @@ module Protocol_constants_overrides = struct
         max_slashing_period = Some parametric.max_slashing_period;
         frozen_deposits_percentage = Some parametric.frozen_deposits_percentage;
         double_baking_punishment = Some parametric.double_baking_punishment;
+        max_blocks_per_endorsement_rights_request =
+          Some parametric.max_blocks_per_endorsement_rights_request;
         ratio_of_frozen_deposits_slashed_per_double_endorsement =
           Some
             parametric.ratio_of_frozen_deposits_slashed_per_double_endorsement;
@@ -515,6 +522,7 @@ module Protocol_constants_overrides = struct
       max_slashing_period = None;
       frozen_deposits_percentage = None;
       double_baking_punishment = None;
+      max_blocks_per_endorsement_rights_request = None;
       ratio_of_frozen_deposits_slashed_per_double_endorsement = None;
       cache_script_size = None;
       cache_stake_distribution_cycles = None;
@@ -750,6 +758,12 @@ module Protocol_constants_overrides = struct
           };
         O
           {
+            name = "max_blocks_per_endorsement_rights_request";
+            override_value = o.max_blocks_per_endorsement_rights_request;
+            pp = pp_print_int;
+          };
+        O
+          {
             name = "ratio_of_frozen_deposits_slashed_per_double_endorsement";
             override_value =
               o.ratio_of_frozen_deposits_slashed_per_double_endorsement;
@@ -942,6 +956,10 @@ module Protocol_constants_overrides = struct
            Option.value
              ~default:c.double_baking_punishment
              o.double_baking_punishment;
+         max_blocks_per_endorsement_rights_request =
+           Option.value
+             ~default:c.max_blocks_per_endorsement_rights_request
+             o.max_blocks_per_endorsement_rights_request;
          ratio_of_frozen_deposits_slashed_per_double_endorsement =
            Option.value
              ~default:c.ratio_of_frozen_deposits_slashed_per_double_endorsement

@@ -57,6 +57,7 @@ type t = {
   max_slashing_period : int;
   frozen_deposits_percentage : int;
   double_baking_punishment : Tez_repr.t;
+  max_blocks_per_endorsement_rights_request : int;
   ratio_of_frozen_deposits_slashed_per_double_endorsement : Ratio_repr.t;
   initial_seed : State_hash.t option;
   cache_script_size : int;

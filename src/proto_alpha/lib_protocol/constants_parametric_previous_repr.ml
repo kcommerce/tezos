@@ -57,6 +57,7 @@ type t = {
   max_slashing_period : int;
   frozen_deposits_percentage : int;
   double_baking_punishment : Tez_repr.t;
+  max_blocks_per_endorsement_rights_request : int;
   ratio_of_frozen_deposits_slashed_per_double_endorsement : Ratio_repr.t;
   initial_seed : State_hash.t option;
   cache_script_size : int;
@@ -118,6 +119,7 @@ let encoding =
                 c.max_slashing_period,
                 c.frozen_deposits_percentage,
                 c.double_baking_punishment,
+                c.max_blocks_per_endorsement_rights_request,
                 c.ratio_of_frozen_deposits_slashed_per_double_endorsement,
                 c.initial_seed ),
               ( ( c.cache_script_size,
@@ -173,6 +175,7 @@ let encoding =
                    max_slashing_period,
                    frozen_deposits_percentage,
                    double_baking_punishment,
+                   max_blocks_per_endorsement_rights_request,
                    ratio_of_frozen_deposits_slashed_per_double_endorsement,
                    initial_seed ),
                  ( ( cache_script_size,
@@ -229,6 +232,7 @@ let encoding =
         consensus_threshold;
         frozen_deposits_percentage;
         double_baking_punishment;
+        max_blocks_per_endorsement_rights_request;
         ratio_of_frozen_deposits_slashed_per_double_endorsement;
         initial_seed;
         cache_script_size;
@@ -292,11 +296,12 @@ let encoding =
                 (req "consensus_committee_size" int31)
                 (req "consensus_threshold" int31))
              (merge_objs
-                (obj6
+                (obj7
                    (req "minimal_participation_ratio" Ratio_repr.encoding)
                    (req "max_slashing_period" int31)
                    (req "frozen_deposits_percentage" int31)
                    (req "double_baking_punishment" Tez_repr.encoding)
+                   (req "max_blocks_per_endorsement_rights_request" int31)
                    (req
                       "ratio_of_frozen_deposits_slashed_per_double_endorsement"
                       Ratio_repr.encoding)

@@ -38,6 +38,8 @@ type Environment.Error_monad.error += Cannot_serialize_log
 
 type Environment.Error_monad.error += Cannot_retrieve_predecessor_level
 
+type Environment.Error_monad.error += Too_many_levels of int (* `Permanent *)
+
 let () =
   Environment.Error_monad.register_error_kind
     `Branch
@@ -66,7 +68,20 @@ let () =
     ~description:"Cannot retrieve predecessor level."
     Data_encoding.empty
     (function Cannot_retrieve_predecessor_level -> Some () | _ -> None)
-    (fun () -> Cannot_retrieve_predecessor_level)
+    (fun () -> Cannot_retrieve_predecessor_level) ;
+  Environment.Error_monad.register_error_kind
+    `Permanent
+    ~id:"too_many_levels"
+    ~title:"Requested baking rights for too many levels at once"
+    ~description:"Requested baking rights for too many levels at once."
+    ~pp:(fun ppf limit ->
+      Format.fprintf
+        ppf
+        "Requested baking rights for too many levels at once. Max is (%d)"
+        limit)
+    Data_encoding.(obj1 (req "max" int31))
+    (function Too_many_levels max -> Some max | _ -> None)
+    (fun max -> Too_many_levels max)
 
 module Mempool = struct
   type error_classification =
@@ -4023,10 +4038,15 @@ module RPC = struct
                 Parameters `level` and `cycle` can be used to specify the \
                 (valid) level(s) in the past or future at which the baking \
                 rights have to be returned.\n\
-                Parameter `delegate` can be used to restrict the results to \
-                the given delegates. If parameter `all` is set, all the baking \
-                opportunities for each baker at each level are returned, \
-                instead of just the first one.\n\
+                The maximum number of levels returned is limited by the config\n\
+               \                variable \
+                `max_blocks_per_endorsement_rights_request`, which\n\
+               \                defaults to `blocks_per_cycle`, but which can \
+                be set lower.\n\
+               \                Parameter `delegate` can be used to restrict \
+                the results to the given delegates. If parameter `all` is set, \
+                all the baking opportunities for each baker at each level are \
+                returned, instead of just the first one.\n\
                 Returns the list of baking opportunities up to round %d. Also \
                 returns the minimal timestamps that correspond to these \
                 opportunities. The timestamps are omitted for levels in the \
@@ -4080,39 +4100,51 @@ module RPC = struct
 
     let register () =
       Registration.register0 ~chunked:true S.baking_rights (fun ctxt q () ->
-          let cycles =
-            match q.cycle with None -> [] | Some cycle -> [cycle]
+          let limit =
+            Constants.max_blocks_per_endorsement_rights_request ctxt
           in
-          let levels =
-            requested_levels
-              ~default_level:(Level.succ ctxt (Level.current ctxt))
-              ctxt
-              cycles
-              q.levels
-          in
-          let max_round =
-            match q.max_round with
-            | None -> default_max_round
-            | Some max_round ->
-                Compare.Int.min
-                  max_round
-                  (Constants.consensus_committee_size ctxt)
-          in
-          List.map_es (baking_rights_at_level ctxt max_round) levels
-          >|=? fun rights ->
-          let rights =
-            if q.all then List.concat rights
-            else List.concat_map remove_duplicated_delegates rights
-          in
-          match q.delegates with
-          | [] -> rights
-          | _ :: _ as delegates ->
-              let is_requested p =
-                List.exists
-                  (Signature.Public_key_hash.equal p.delegate)
-                  delegates
+          match q.cycle with
+          | None -> return []
+          | Some cycle -> (
+              fail_when
+                (limit < Int32.to_int @@ Constants.blocks_per_cycle ctxt)
+                (Too_many_levels limit)
+              >>=? fun () ->
+              return [cycle] >>=? fun cycles ->
+              let levels =
+                requested_levels
+                  ~default_level:(Level.succ ctxt (Level.current ctxt))
+                  ctxt
+                  cycles
+                  q.levels
               in
-              List.filter is_requested rights)
+              fail_when
+                Compare.List_length_with.(levels > limit)
+                (Too_many_levels limit)
+              >>=? fun () ->
+              let max_round =
+                match q.max_round with
+                | None -> default_max_round
+                | Some max_round ->
+                    Compare.Int.min
+                      max_round
+                      (Constants.consensus_committee_size ctxt)
+              in
+              List.map_es (baking_rights_at_level ctxt max_round) levels
+              >|=? fun rights ->
+              let rights =
+                if q.all then List.concat rights
+                else List.concat_map remove_duplicated_delegates rights
+              in
+              match q.delegates with
+              | [] -> rights
+              | _ :: _ as delegates ->
+                  let is_requested p =
+                    List.exists
+                      (Signature.Public_key_hash.equal p.delegate)
+                      delegates
+                  in
+                  List.filter is_requested rights))
 
     let get ctxt ?(levels = []) ?cycle ?(delegates = []) ?(all = false)
         ?max_round block =
