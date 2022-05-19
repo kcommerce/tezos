@@ -82,7 +82,7 @@ module type S = sig
 
   (**
 
-      During interactive rejection games, a player may need to
+      During interactive refutation games, a player may need to
       provide a proof that a given execution step described as
       a pair of a [hash] for the state before the execution step
       and a [hash] for the state right after the execution step
