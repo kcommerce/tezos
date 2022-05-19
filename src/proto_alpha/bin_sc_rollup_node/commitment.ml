@@ -86,24 +86,21 @@ let last_commitment_level (module Last_commitment_level : Mutable_level_store)
 
 let last_commitment_with_hash
     (module Last_commitment_level : Mutable_level_store) store =
-  let open Lwt_syntax in
+  let open Lwt_option_syntax in
   let* last_commitment_level =
     last_commitment_level (module Last_commitment_level) store
   in
-  match last_commitment_level with
-  | Some level ->
-      let+ commitment_with_hash = Store.Commitments.get store level in
-      Some commitment_with_hash
-  | None -> return None
+  let*! commitment_with_hash =
+    Store.Commitments.get store last_commitment_level
+  in
+  return commitment_with_hash
 
 let last_commitment (module Last_commitment_level : Mutable_level_store) store =
-  let open Lwt_syntax in
-  let+ last_commitment_with_hash =
+  let open Lwt_option_syntax in
+  let+ commitment, _hash =
     last_commitment_with_hash (module Last_commitment_level) store
   in
-  match last_commitment_with_hash with
-  | Some (commitment, _hash) -> Some commitment
-  | None -> None
+  commitment
 
 let next_commitment_level (module Last_commitment_level : Mutable_level_store)
     ~origination_level store =
@@ -373,16 +370,11 @@ module Make (PVM : Pvm.S) : S with module PVM = PVM = struct
     get_commitment_and_publish node_ctxt level_to_publish store ~check_lcc_hash
 
   let earliest_cementing_level store commitment_hash =
-    let open Lwt_result_syntax in
-    let*! published_at_level =
+    let open Lwt_option_syntax in
+    let+ published_at_level =
       Store.Commitments_published_at_level.find store commitment_hash
     in
-    match published_at_level with
-    | Some level ->
-        return
-        @@ Some
-             (Int32.add (Raw_level.to_int32 level) sc_rollup_challenge_window)
-    | None -> return None
+    Int32.add (Raw_level.to_int32 published_at_level) sc_rollup_challenge_window
 
   let can_be_cemented earliest_cementing_level head_level =
     earliest_cementing_level <= head_level
@@ -446,7 +438,7 @@ module Make (PVM : Pvm.S) : S with module PVM = PVM = struct
     (* If `commitment_with_hash` is defined, the commitment to be cemented has
        been stored but not necessarily published by the rollup node. *)
     | Some (commitment, commitment_hash) -> (
-        let* earliest_cementing_level =
+        let*! earliest_cementing_level =
           earliest_cementing_level store commitment_hash
         in
         match earliest_cementing_level with
