@@ -312,5 +312,5 @@ module Proof : sig
     Raw_level_repr.t * Z.t ->
     inbox ->
     t ->
-    (Raw_level_repr.t * Z.t * string option, unit) result Lwt.t
+    (Sc_rollup_PVM_sem.input option, unit) result Lwt.t
 end

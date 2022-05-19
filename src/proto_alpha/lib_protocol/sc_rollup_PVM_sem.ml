@@ -46,17 +46,23 @@
    an actual source of truth about the nature of these messages).
 
 *)
-open Alpha_context
 
-open Sc_rollup
+open Sc_rollup_repr
 
 (** An input to a PVM is the [message_counter] element of an inbox at
     a given [inbox_level] and contains a given [payload]. *)
 type input = {
-  inbox_level : Raw_level.t;
+  inbox_level : Raw_level_repr.t;
   message_counter : Z.t;
   payload : string;
 }
+
+let input_equal (a : input) (b : input) : bool =
+  (* to be robust to addition of fields in [input] *)
+  let {inbox_level; message_counter; payload} = a in
+  Raw_level_repr.equal inbox_level b.inbox_level
+  && Z.equal message_counter b.message_counter
+  && String.equal payload b.payload
 
 (** The PVM's current input expectations. [No_input_required] is if the
     machine is busy and has no need for new input. [Initial] will be if
@@ -66,7 +72,7 @@ type input = {
 type input_request =
   | No_input_required
   | Initial
-  | First_after of Raw_level.t * Z.t
+  | First_after of Raw_level_repr.t * Z.t
 
 module type S = sig
   (**
@@ -104,8 +110,9 @@ module type S = sig
 
   (** [proof_input_given proof] returns the [input], if any, provided to
       the start state of the proof using the [set_input] function. If
-      [None], the proof is an [eval] step instead. This must match with
-      the inbox proof to complete a valid refutation game proof. *)
+      [None], the proof is an [eval] step instead, or the machine is
+      blocked because the inbox is fully read. This must match with the
+      inbox proof to complete a valid refutation game proof. *)
   val proof_input_given : proof -> input option
 
   (** [state_hash state] returns a compressed representation of [state]. *)

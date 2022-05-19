@@ -24,122 +24,67 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-open Sc_rollup_repr
-
-type pvm_ops = {
-  eval :
-    (Raw_level_repr.t * Z.t * string) option ->
-    Context.tree ->
-    (Context.tree * unit) Lwt.t;
-  expect_input :
-    Context.tree -> (Context.tree * (Raw_level_repr.t * Z.t) option) Lwt.t;
+type t = {
+  pvm_step : Sc_rollups.pvm_with_proof;
+  inbox : Sc_rollup_inbox_repr.Proof.t option;
 }
 
-type t =
-  | Computation_step of {
-      step : Context.Proof.tree Context.Proof.t;
-      not_input : Context.Proof.tree Context.Proof.t;
-    }
-  | Input_step of {
-      step : Context.Proof.tree Context.Proof.t;
-      input : Context.Proof.tree Context.Proof.t;
-      inbox : Sc_rollup_inbox_repr.Proof.t;
-    }
-  | Blocked_step of {
-      input : Context.Proof.tree Context.Proof.t;
-      inbox : Sc_rollup_inbox_repr.Proof.t;
-    }
-
 let encoding =
-  Data_encoding.(
-    union
-      ~tag_size:`Uint8
-      [
-        case
-          ~title:"Proof of a normal computation step"
-          (Tag 0)
-          (tup2
-             Context.Proof_encoding.V2.Tree32.tree_proof_encoding
-             Context.Proof_encoding.V2.Tree32.tree_proof_encoding)
-          (function
-            | Computation_step {step; not_input} -> Some (step, not_input)
-            | _ -> None)
-          (fun (step, not_input) -> Computation_step {step; not_input});
-        case
-          ~title:"Proof of an input step"
-          (Tag 1)
-          (tup3
-             Context.Proof_encoding.V2.Tree32.tree_proof_encoding
-             Context.Proof_encoding.V2.Tree32.tree_proof_encoding
-             Sc_rollup_inbox_repr.Proof.encoding)
-          (function
-            | Input_step {step; input; inbox} -> Some (step, input, inbox)
-            | _ -> None)
-          (fun (step, input, inbox) -> Input_step {step; input; inbox});
-        case
-          ~title:"Proof that the PVM is blocked"
-          (Tag 2)
-          (tup2
-             Context.Proof_encoding.V2.Tree32.tree_proof_encoding
-             Sc_rollup_inbox_repr.Proof.encoding)
-          (function
-            | Blocked_step {input; inbox} -> Some (input, inbox) | _ -> None)
-          (fun (input, inbox) -> Blocked_step {input; inbox});
-      ])
+  let open Data_encoding in
+  conv
+    (fun {pvm_step; inbox} -> (pvm_step, inbox))
+    (fun (pvm_step, inbox) -> {pvm_step; inbox})
+    (obj2
+       (req "pvm_step" Sc_rollups.pvm_with_proof_encoding)
+       (req "inbox" (option Sc_rollup_inbox_repr.Proof.encoding)))
 
-let pp ppf proof =
-  match proof with
-  | Computation_step _ -> Format.fprintf ppf "Computation step proof"
-  | Input_step _ -> Format.fprintf ppf "Input step proof"
-  | Blocked_step _ -> Format.fprintf ppf "Blocked step proof"
+let pp ppf _ = Format.fprintf ppf "Refutation game proof"
 
-let start p =
-  match p with
-  | Computation_step x -> State_hash.of_kinded_hash x.step.before
-  | Input_step x -> State_hash.of_kinded_hash x.step.before
-  | Blocked_step x -> State_hash.of_kinded_hash x.input.before
+let start proof =
+  let (module P) = Sc_rollups.pvm_with_proof_module proof.pvm_step in
+  P.proof_start_state P.proof
 
-let stop p =
-  match p with
-  | Computation_step x -> Some (State_hash.of_kinded_hash x.step.after)
-  | Input_step x -> Some (State_hash.of_kinded_hash x.step.after)
-  | Blocked_step _ -> None
+let stop proof =
+  let (module P) = Sc_rollups.pvm_with_proof_module proof.pvm_step in
+  P.proof_stop_state P.proof
 
-let kinded_hash_equal a b =
-  match (a, b) with
-  | `Node x, `Node y -> Context_hash.equal x y
-  | `Value x, `Value y -> Context_hash.equal x y
-  | _ -> false
+(* This takes an [input] and checks if it is at or above the given level.
+   It returns [None] if this is the case.
 
-let tree_proof proof f =
-  Lwt.map (Result.map_error (fun _ -> ())) @@ Context.verify_tree_proof proof f
+   We use this to check that the PVM proof is obeying [commit_level]
+   correctly---if the message obtained from the inbox proof is at or
+   above [commit_level] the [input_given] in the PVM proof should be
+   [None]. *)
+let cut_at_level level input =
+  let input_level = Sc_rollup_PVM_sem.(input.inbox_level) in
+  match Raw_level_repr.compare level input_level with
+  | 0 | 1 -> None
+  | _ -> Some input
 
-let from_option x = Lwt_syntax.return @@ Result.of_option ~error:() x
-
-let valid pvm_ops snapshot commit_level p =
+let valid snapshot commit_level proof =
+  let (module P) = Sc_rollups.pvm_with_proof_module proof.pvm_step in
   let open Lwt_result_syntax in
-  match p with
-  | Computation_step {step; not_input} ->
-      let hashes_match = kinded_hash_equal step.before not_input.before in
-      let* _ = tree_proof step (pvm_ops.eval None) in
-      let* _, not_input_result = tree_proof not_input pvm_ops.expect_input in
-      return (hashes_match && Option.is_none not_input_result)
-  | Input_step {step; input; inbox} ->
-      let hashes_match = kinded_hash_equal step.before input.before in
-      let* _, inbox_location = tree_proof input pvm_ops.expect_input in
-      let* l, n = from_option inbox_location in
-      let* l, n, payload_opt =
-        Sc_rollup_inbox_repr.Proof.valid (l, Z.succ n) snapshot inbox
-      in
-      let* payload = from_option payload_opt in
-      let* _ = tree_proof step (pvm_ops.eval (Some (l, n, payload))) in
-      return (hashes_match && not (Raw_level_repr.equal l commit_level))
-  | Blocked_step {input; inbox} -> (
-      let* _, inbox_location = tree_proof input pvm_ops.expect_input in
-      let* loc = from_option inbox_location in
-      let* l, _, payload_opt =
-        Sc_rollup_inbox_repr.Proof.valid loc snapshot inbox
-      in
-      match payload_opt with
-      | Some _ -> return @@ Raw_level_repr.equal l commit_level
-      | None -> return true)
+  let input_requested = P.proof_input_requested P.proof in
+  let input_given = P.proof_input_given P.proof in
+  let* input =
+    match (input_requested, proof.inbox) with
+    | Sc_rollup_PVM_sem.No_input_required, None -> return None
+    | Sc_rollup_PVM_sem.Initial, Some inbox_proof ->
+        Sc_rollup_inbox_repr.Proof.valid
+          (Raw_level_repr.root, Z.zero)
+          snapshot
+          inbox_proof
+    | Sc_rollup_PVM_sem.First_after (level, counter), Some inbox_proof ->
+        Sc_rollup_inbox_repr.Proof.valid
+          (level, Z.succ counter)
+          snapshot
+          inbox_proof
+    | _ -> fail ()
+  in
+  let input_given_equal =
+    Option.equal
+      Sc_rollup_PVM_sem.input_equal
+      (Option.bind input (cut_at_level commit_level))
+      input_given
+  in
+  return input_given_equal

@@ -397,7 +397,7 @@ let check_proof_metadata start start_tick stop stop_tick proof =
   check
   @@ not (Option.equal State_hash.equal stop (Sc_rollup_proof_repr.stop proof))
 
-let play pvm_ops game refutation =
+let play game refutation =
   let result =
     let open Lwt_result_syntax in
     let* start, start_tick, stop, stop_tick =
@@ -417,11 +417,7 @@ let play pvm_ops game refutation =
     | Proof proof ->
         let* _ = check_proof_metadata start start_tick stop stop_tick proof in
         let* proof_valid =
-          Sc_rollup_proof_repr.valid
-            pvm_ops
-            game.inbox_snapshot
-            game.level
-            proof
+          Sc_rollup_proof_repr.valid game.inbox_snapshot game.level proof
         in
         let* _ = check proof_valid in
         return

@@ -58,6 +58,7 @@ module Sc_rollup = struct
   module Inbox = Sc_rollup_inbox_repr
   module Proof = Sc_rollup_proof_repr
   module Game = Sc_rollup_game_repr
+  include Sc_rollups
   include Sc_rollup_storage
 end
 

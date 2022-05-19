@@ -2598,29 +2598,7 @@ module Sc_rollup : sig
   end
 
   module Proof : sig
-    type pvm_ops = {
-      eval :
-        (Raw_level.t * Z.t * string) option ->
-        Context.tree ->
-        (Context.tree * unit) Lwt.t;
-      expect_input :
-        Context.tree -> (Context.tree * (Raw_level.t * Z.t) option) Lwt.t;
-    }
-
-    type t =
-      | Computation_step of {
-          step : Context.Proof.tree Context.Proof.t;
-          not_input : Context.Proof.tree Context.Proof.t;
-        }
-      | Input_step of {
-          step : Context.Proof.tree Context.Proof.t;
-          input : Context.Proof.tree Context.Proof.t;
-          inbox : Inbox.Proof.t;
-        }
-      | Blocked_step of {
-          input : Context.Proof.tree Context.Proof.t;
-          inbox : Inbox.Proof.t;
-        }
+    type t
   end
 
   module Game : sig
@@ -2723,7 +2701,6 @@ module Sc_rollup : sig
   val update_game :
     context ->
     t ->
-    Proof.pvm_ops ->
     player:Staker.t ->
     opponent:Staker.t ->
     Game.refutation ->

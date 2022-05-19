@@ -23,7 +23,33 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-open Alpha_context.Sc_rollup
+module Kind = struct
+  (*
+
+      Each time we add a data constructor to [t], we also need:
+      - to extend [Sc_rollups.all] with this new constructor ;
+      - to update [Sc_rollups.kind_of_string] and [encoding] ;
+      - to update [Sc_rollups.pvm_proof] and [pvm_proof_encoding].
+
+  *)
+  type t = Example_arith
+
+  let example_arith_case =
+    Data_encoding.(
+      case
+        ~title:"Example_arith smart contract rollup kind"
+        (Tag 0)
+        unit
+        (function Example_arith -> Some ())
+        (fun () -> Example_arith))
+
+  let encoding = Data_encoding.union ~tag_size:`Uint16 [example_arith_case]
+
+  let equal x y = match (x, y) with Example_arith, Example_arith -> true
+
+  let pp fmt kind =
+    match kind with Example_arith -> Format.fprintf fmt "Example_arith"
+end
 
 module PVM = struct
   type boot_sector = string
@@ -71,22 +97,56 @@ let string_of_kind k =
 
 let pp fmt k = Format.fprintf fmt "%s" (string_of_kind k)
 
-(* Add a case here for each new PVM implementation that requires proofs
-   in L1 operations (needed for refutation game). *)
-type pvm_proof =
-  | Example_arith_proof of Sc_rollup_arith.ProtocolImplementation.proof
+module type PVM_with_proof = sig
+  include Sc_rollup_PVM_sem.S
 
-let kind_of_proof = function Example_arith_proof _ -> Kind.Example_arith
+  val proof : proof
+end
 
-let pvm_proof_encoding =
-  Data_encoding.(
-    union
-      ~tag_size:`Uint8
-      [
-        case
-          ~title:"Arithmetic PVM proof"
-          (Tag 0)
-          Sc_rollup_arith.ProtocolImplementation.proof_encoding
-          (function Example_arith_proof proof -> Some proof)
-          (fun proof -> Example_arith_proof proof);
-      ])
+type pvm_with_proof =
+  | Unencodable of (module PVM_with_proof)
+  | Arith_pvm_with_proof of
+      (module PVM_with_proof
+         with type proof = Sc_rollup_arith.ProtocolImplementation.proof)
+
+let pvm_with_proof_module p =
+  match p with
+  | Unencodable p -> p
+  | Arith_pvm_with_proof p ->
+      let (module P) = p in
+      (module struct
+        include P
+      end : PVM_with_proof)
+
+let pvm_with_proof_encoding =
+  let open Data_encoding in
+  union
+    ~tag_size:`Uint8
+    [
+      case
+        ~title:"Unencodable PVM with proof"
+        (Tag 0)
+        unit
+        (function Unencodable _ -> Some () | _ -> None)
+        (fun () -> assert false);
+      case
+        ~title:"Arithmetic PVM with proof"
+        (Tag 1)
+        Sc_rollup_arith.ProtocolImplementation.proof_encoding
+        (function
+          | Arith_pvm_with_proof pvm ->
+              let (module P : PVM_with_proof
+                    with type proof =
+                      Sc_rollup_arith.ProtocolImplementation.proof) =
+                pvm
+              in
+              Some P.proof
+          | _ -> None)
+        (fun proof ->
+          let module P = struct
+            include Sc_rollup_arith.ProtocolImplementation
+
+            let proof = proof
+          end in
+          Arith_pvm_with_proof (module P));
+    ]

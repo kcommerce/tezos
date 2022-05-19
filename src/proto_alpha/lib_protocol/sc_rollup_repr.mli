@@ -131,21 +131,3 @@ module Index : Storage_description.INDEX with type t = Address.t
 
 module Commitment_hash_index :
   Storage_description.INDEX with type t = Commitment_hash.t
-
-(** A smart contract rollup has a kind, which assigns meaning to
-   rollup operations. *)
-module Kind : sig
-  (**
-
-     The list of available rollup kinds.
-
-     This list must only be appended for backward compatibility.
-  *)
-  type t = Example_arith
-
-  val encoding : t Data_encoding.t
-
-  val equal : t -> t -> bool
-
-  val pp : Format.formatter -> t -> unit
-end

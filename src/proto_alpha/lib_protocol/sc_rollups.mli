@@ -24,7 +24,24 @@
 (*****************************************************************************)
 
 (** Here is the list of PVMs available in this protocol. *)
-open Alpha_context.Sc_rollup
+
+(** A smart contract rollup has a kind, which assigns meaning to
+   rollup operations. *)
+module Kind : sig
+  (**
+
+     The list of available rollup kinds.
+
+     This list must only be appended for backward compatibility.
+  *)
+  type t = Example_arith
+
+  val encoding : t Data_encoding.t
+
+  val equal : t -> t -> bool
+
+  val pp : Format.formatter -> t -> unit
+end
 
 module PVM : sig
   type boot_sector = string
@@ -67,8 +84,18 @@ val string_of_kind : Kind.t -> string
 (** [pp fmt kind] is a pretty-printer for [kind]. *)
 val pp : Format.formatter -> Kind.t -> unit
 
-type pvm_proof
+module type PVM_with_proof = sig
+  include Sc_rollup_PVM_sem.S
 
-val kind_of_proof : pvm_proof -> Kind.t
+  val proof : proof
+end
 
-val pvm_proof_encoding : pvm_proof Data_encoding.t
+type pvm_with_proof =
+  | Unencodable of (module PVM_with_proof)
+  | Arith_pvm_with_proof of
+      (module PVM_with_proof
+         with type proof = Sc_rollup_arith.ProtocolImplementation.proof)
+
+val pvm_with_proof_module : pvm_with_proof -> (module PVM_with_proof)
+
+val pvm_with_proof_encoding : pvm_with_proof Data_encoding.t

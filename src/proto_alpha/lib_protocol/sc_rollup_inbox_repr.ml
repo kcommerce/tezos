@@ -640,9 +640,12 @@ module Proof = struct
             @@ Context.verify_tree_proof proof.message_proof (message_payload n)
           in
           match payload with
-          | None ->
-              if equal proof.level inbox then return (l, n, None) else fail ()
-          | Some _ -> return (l, n, payload)
+          | None -> if equal proof.level inbox then return None else fail ()
+          | Some msg ->
+              return
+              @@ Some
+                   Sc_rollup_PVM_sem.
+                     {inbox_level = l; message_counter = n; payload = msg}
         else fail ()
     | Some (level, inc, remaining_proof) ->
         if

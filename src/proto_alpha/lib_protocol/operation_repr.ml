@@ -359,7 +359,7 @@ and _ manager_operation =
     }
       -> Kind.transfer_ticket manager_operation
   | Sc_rollup_originate : {
-      kind : Sc_rollup_repr.Kind.t;
+      kind : Sc_rollups.Kind.t;
       boot_sector : string;
     }
       -> Kind.sc_rollup_originate manager_operation
@@ -914,7 +914,7 @@ module Encoding = struct
           name = "sc_rollup_originate";
           encoding =
             obj2
-              (req "kind" Sc_rollup_repr.Kind.encoding)
+              (req "kind" Sc_rollups.Kind.encoding)
               (req "boot_sector" Data_encoding.string);
           select =
             (function
