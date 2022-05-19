@@ -159,10 +159,10 @@ let random_dissection start_at start_hash stop_at _stop_hash :
 let gen_list =
   QCheck2.Gen.(
     map (fun (_, l) -> List.rev l)
-    @@ sized
+    @@ sized_size small_nat
     @@ fix (fun self n ->
            match n with
-           | 0 -> map (fun x -> (1, [string_of_int x])) nat
+           | 0 -> map (fun x -> (1, [string_of_int x])) small_nat
            | n ->
                frequency
                  [
@@ -172,12 +172,12 @@ let gen_list =
                          if stack_size >= 2 then
                            (stack_size - 1, "+" :: state_list)
                          else (stack_size + 1, string_of_int x :: state_list))
-                       nat
+                       small_nat
                        (self (n - 1)) );
                    ( 1,
                      map2
                        (fun x (i, y) -> (i + 1, string_of_int x :: y))
-                       nat
+                       small_nat
                        (self (n - 1)) );
                  ]))
 
