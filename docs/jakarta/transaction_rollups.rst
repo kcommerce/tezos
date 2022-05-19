@@ -370,7 +370,7 @@ then finalized, then deleted.
    context.
 
 #. Finalized: During this stage, any :ref:`Dispatch tickets<withdrawals_jakarta>`
-   operations from this rollup level can occur.  Commitments can no
+operations from this rollup level can occur.  Commitments can no
    longer be rejected.
 
 #. Deleted: Finally, after the **withdrawal period**
