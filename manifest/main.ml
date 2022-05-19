@@ -316,6 +316,8 @@ let ledgerwallet_tezos = vendored_lib "ledgerwallet-tezos"
 
 let pyml_plot = vendored_lib "pyml-plot"
 
+let _polynomial = vendored_lib "polynomial"
+
 (* INTERNAL LIBS *)
 
 let tezos_test_helpers =
