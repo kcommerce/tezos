@@ -637,7 +637,7 @@ struct
     If the length of this section is one tick the returns a conclusion with
     the given modified states.
     If the length is longer it creates a random decision and outputs a Refine
-     decisoon with this dissection.*)
+     decision with this dissection.*)
   let random_decision d =
     let cardinal = List.length d in
     let x = max 0 (Random.int (cardinal - 1)) in
@@ -683,10 +683,7 @@ struct
           (Some
              Sc_rollup_game_repr.{choice = start; step = Dissection dissection})
 
-  type checkpoint = Sc_rollup_tick_repr.t -> bool
-
-  (** there are two kinds of strategies, random and machine dirrected by a
-  params and a checkpoint*)
+  (** there are two kinds of strategies, random and machine directed*)
   type strategy = Random | MachineDirected
 
   (**
@@ -763,7 +760,7 @@ struct
         Lwt.return (Some refutation)
     | None -> Lwt.return None
 
-  (** this is an outomatic commuter client. It generates a "perfect" client
+  (** this is an automatic commuter client. It generates a "perfect" client
   for the defender.*)
   let machine_directed_defender =
     let start_state = PVM.Utils.default_state in
@@ -814,8 +811,8 @@ struct
 
   (** This builds a refuter client from a strategy.
     If the strategy is MachineDirected it uses the above constructions.
-    If the strategy is random then it uses a randomdissection
-    of the commited section for the initial refutation
+    If the strategy is random then it uses a random dissection
+    of the committed section for the initial refutation
      and  the random decision for the next move.*)
   let refuter_from_strategy = function
     | Random ->
@@ -825,7 +822,7 @@ struct
         }
     | MachineDirected -> machine_directed_refuter
 
-  (** [test_strategies defender_strategy refuter_strategy expectation]
+  (** [test_strategies defender_strategy refuter_strategy expectation inbox]
     runs a game based oin the two given strategies and checks that the
      resulting outcome fits the expectations. *)
   let test_strategies defender_strategy refuter_strategy expectation inbox =
@@ -833,15 +830,6 @@ struct
     let refuter_client = refuter_from_strategy refuter_strategy in
     let outcome = run ~inbox ~defender_client ~refuter_client in
     expectation outcome
-
-  (** This is a commuter client having a perfect strategy*)
-  let perfect_defender = MachineDirected
-
-  (** This is a refuter client having a perfect strategy*)
-
-  let perfect_refuter = MachineDirected
-
-  (** This is a commuter client having a strategy that forgets a tick*)
 
   (** the possible expectation functions *)
   let defender_wins x =
@@ -863,11 +851,7 @@ end
 let perfect_perfect (module P : TestPVM) inbox =
   let module R = Strategies (P) in
   Lwt.return
-  @@ R.test_strategies
-       R.perfect_defender
-       R.perfect_refuter
-       R.defender_wins
-       inbox
+  @@ R.test_strategies MachineDirected MachineDirected R.defender_wins inbox
 
 let random_random (module P : TestPVM) inbox =
   let module S = Strategies (P) in
@@ -875,12 +859,11 @@ let random_random (module P : TestPVM) inbox =
 
 let random_perfect (module P : TestPVM) inbox =
   let module S = Strategies (P) in
-  Lwt.return @@ S.test_strategies Random S.perfect_refuter S.refuter_wins inbox
+  Lwt.return @@ S.test_strategies Random MachineDirected S.refuter_wins inbox
 
 let perfect_random (module P : TestPVM) inbox =
   let module S = Strategies (P) in
-  Lwt.return
-  @@ S.test_strategies S.perfect_defender Random S.defender_wins inbox
+  Lwt.return @@ S.test_strategies MachineDirected Random S.defender_wins inbox
 
 (** this assembles a test from a RandomPVM and a function that choses the
   type of strategies *)
