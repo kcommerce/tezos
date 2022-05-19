@@ -930,8 +930,7 @@ let testing_arith (f : (module TestPVM) -> Sc_rollup_inbox_repr.t -> bool Lwt.t)
     ~name
     Gen.(pair gen_list small_int)
     (fun (inputs, evals) ->
-      assume
-        (List.length inputs < 500 && evals > 1 && evals < List.length inputs - 1) ;
+      assume (evals > 1 && evals < List.length inputs - 1) ;
       let rollup = Sc_rollup_repr.Address.hash_string [""] in
       let level =
         Raw_level_repr.of_int32 0l |> function Ok x -> x | _ -> assert false
