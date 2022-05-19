@@ -114,8 +114,6 @@ type error +=
   | (* `Temporary *)
       Sc_rollup_does_not_exist of Sc_rollup_repr.t
   | (* `Temporary *)
-      Sc_rollup_already_staked
-  | (* `Temporary *)
       Sc_rollup_not_staked_on_lcc
   | (* `Temporary *)
       Sc_rollup_staker_backtracked
@@ -201,10 +199,11 @@ val inbox :
     cemented commitment, freezing [sc_rollup_deposit] from [staker]'s account
     balance.
 
+    It must be called if both the [rollup] exists and the [staker] is not to be
+    found in {!Store.Stakers}.
+
     May fail with:
     {ul
-      {li [Sc_rollup_does_not_exist] if [rollup] does not exist}
-      {li [Sc_rollup_already_staked] if [staker] is already staked}
       {li [Sc_rollup_staker_funds_too_low] if [staker] does not have enough funds to cover the deposit}
     }
 

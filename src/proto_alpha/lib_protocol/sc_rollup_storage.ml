@@ -25,7 +25,6 @@
 (*****************************************************************************)
 
 type error +=
-  | (* `Temporary *) Sc_rollup_already_staked
   | (* `Temporary *) Sc_rollup_disputed
   | (* `Temporary *) Sc_rollup_does_not_exist of Sc_rollup_repr.t
   | (* `Temporary *) Sc_rollup_no_conflict
@@ -90,16 +89,6 @@ let () =
     Data_encoding.unit
     (function Sc_rollup_wrong_turn -> Some () | _ -> None)
     (fun () -> Sc_rollup_wrong_turn) ;
-  let description = "Already staked." in
-  register_error_kind
-    `Temporary
-    ~id:"Sc_rollup_already_staked"
-    ~title:"Already staked"
-    ~description
-    ~pp:(fun ppf () -> Format.fprintf ppf "%s" description)
-    Data_encoding.empty
-    (function Sc_rollup_already_staked -> Some () | _ -> None)
-    (fun () -> Sc_rollup_already_staked) ;
   let description = "Attempted to cement a disputed commitment." in
   register_error_kind
     `Temporary
@@ -477,16 +466,12 @@ let decrease_commitment_stake_count ctxt rollup node =
 let deposit_stake ctxt rollup staker =
   let open Lwt_tzresult_syntax in
   let* lcc, ctxt = last_cemented_commitment ctxt rollup in
-  let* ctxt, res = Store.Stakers.find (ctxt, rollup) staker in
-  match res with
-  | None ->
-      (* TODO: https://gitlab.com/tezos/tezos/-/issues/2449
-         We should lock stake here, and fail if there aren't enough funds.
-      *)
-      let* ctxt, _size = Store.Stakers.init (ctxt, rollup) staker lcc in
-      let* ctxt = modify_staker_count ctxt rollup Int32.succ in
-      return ctxt
-  | Some _ -> fail Sc_rollup_already_staked
+  (* TODO: https://gitlab.com/tezos/tezos/-/issues/2449
+     We should lock stake here, and fail if there aren't enough funds.
+  *)
+  let* ctxt, _size = Store.Stakers.init (ctxt, rollup) staker lcc in
+  let* ctxt = modify_staker_count ctxt rollup Int32.succ in
+  return ctxt
 
 let withdraw_stake ctxt rollup staker =
   let open Lwt_tzresult_syntax in
