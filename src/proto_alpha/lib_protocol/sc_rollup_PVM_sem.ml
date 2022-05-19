@@ -106,8 +106,9 @@ module type S = sig
   val proof_encoding : proof Data_encoding.t
 
   (** [verify_proof input proof] returns [true] iff the [proof] is
-      valid. If the state is an input state, [input] is the inbox
-      message provided to the evaluation function. *)
+     valid. If the state related to the proof is an input state,
+     [input] is the inbox message provided to the evaluation
+     function. *)
   val verify_proof : input:input option -> proof -> bool Lwt.t
 
   (** [proof_start_state proof] returns the initial state hash of the
