@@ -21,8 +21,6 @@ trace
   - [halt] (entry) @ location: 18
     [ { Elt "123" 123 }
       Unit ]
-    - control: KUndip
-    - control: KCons
     - log/ITER (exit) @ location: 16
       [ { Pair "string" 12 ; Pair "abc" 99 ; Pair "def" 3 }
         { Elt "123" 123 }
@@ -31,7 +29,6 @@ trace
     [ { Pair "string" 12 ; Pair "abc" 99 ; Pair "def" 3 }
       { Elt "123" 123 }
       Unit ]
-    - control: KIter
     - log/UNPAIR (exit) @ location: 19
       [ (Pair "string" 12)
         { Elt "123" 123 }
@@ -110,7 +107,6 @@ trace
       12
       { Elt "123" 123 }
       Unit ]
-    - control: KCons
     - log/SWAP (exit) @ location: 27
       [ 0
         "string"
@@ -161,8 +157,6 @@ trace
     [ (Some 12)
       { Elt "123" 123 }
       Unit ]
-    - control: KUndip
-    - control: KCons
     - log/UPDATE (exit) @ location: 34
       [ "string"
         (Some 12)
@@ -179,7 +173,6 @@ trace
   - [halt] (entry) @ location: 19
     [ { Elt "123" 123 ; Elt "string" 12 }
       Unit ]
-    - control: KIter
     - log/UNPAIR (exit) @ location: 19
       [ (Pair "abc" 99)
         { Elt "123" 123 ; Elt "string" 12 }
@@ -258,7 +251,6 @@ trace
       99
       { Elt "123" 123 ; Elt "string" 12 }
       Unit ]
-    - control: KCons
     - log/SWAP (exit) @ location: 27
       [ 0
         "abc"
@@ -309,8 +301,6 @@ trace
     [ (Some 99)
       { Elt "123" 123 ; Elt "string" 12 }
       Unit ]
-    - control: KUndip
-    - control: KCons
     - log/UPDATE (exit) @ location: 34
       [ "abc"
         (Some 99)
@@ -327,7 +317,6 @@ trace
   - [halt] (entry) @ location: 19
     [ { Elt "123" 123 ; Elt "abc" 99 ; Elt "string" 12 }
       Unit ]
-    - control: KIter
     - log/UNPAIR (exit) @ location: 19
       [ (Pair "def" 3)
         { Elt "123" 123 ; Elt "abc" 99 ; Elt "string" 12 }
@@ -406,7 +395,6 @@ trace
       3
       { Elt "123" 123 ; Elt "abc" 99 ; Elt "string" 12 }
       Unit ]
-    - control: KCons
     - log/SWAP (exit) @ location: 27
       [ 0
         "def"
@@ -457,8 +445,6 @@ trace
     [ (Some 3)
       { Elt "123" 123 ; Elt "abc" 99 ; Elt "string" 12 }
       Unit ]
-    - control: KUndip
-    - control: KCons
     - log/UPDATE (exit) @ location: 34
       [ "def"
         (Some 3)
@@ -475,8 +461,6 @@ trace
   - [halt] (entry) @ location: 19
     [ { Elt "123" 123 ; Elt "abc" 99 ; Elt "def" 3 ; Elt "string" 12 }
       Unit ]
-    - control: KIter
-    - control: KCons
     - log/PAIR (exit) @ location: 19
       [ { Elt "123" 123 ; Elt "abc" 99 ; Elt "def" 3 ; Elt "string" 12 }
         Unit ]
@@ -497,4 +481,3 @@ trace
       [ (Pair {} { Elt "123" 123 ; Elt "abc" 99 ; Elt "def" 3 ; Elt "string" 12 } Unit) ]
   - [halt] (entry) @ location: 13
     [ (Pair {} { Elt "123" 123 ; Elt "abc" 99 ; Elt "def" 3 ; Elt "string" 12 } Unit) ]
-    - control: KNil

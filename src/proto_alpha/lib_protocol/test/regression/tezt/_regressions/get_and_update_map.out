@@ -21,8 +21,6 @@ trace
   - [halt] (entry) @ location: 16
     [ (Some 321)
       { Elt "def" 123 } ]
-    - control: KUndip
-    - control: KCons
     - log/GET_AND_UPDATE (exit) @ location: 14
       [ "abc"
         (Some 321)
@@ -51,4 +49,3 @@ trace
       [ (Pair {} None { Elt "abc" 321 ; Elt "def" 123 }) ]
   - [halt] (entry) @ location: 11
     [ (Pair {} None { Elt "abc" 321 ; Elt "def" 123 }) ]
-    - control: KNil

@@ -39,17 +39,14 @@ trace
       [ "" ]
   - [halt] (entry) @ location: 35
     [ "" ]
-    - control: KCons
     - log/[halt] (exit) @ location: 26
       [ "" ]
   - [halt] (entry) @ location: 35
     [ "" ]
-    - control: KCons
     - log/[halt] (exit) @ location: 14
       [ "" ]
   - [halt] (entry) @ location: 35
     [ "" ]
-    - control: KCons
     - log/NIL (exit) @ location: 11
       [ "" ]
   - NIL (entry) @ location: 35
@@ -64,4 +61,3 @@ trace
       [ (Pair {} "") ]
   - [halt] (entry) @ location: 9
     [ (Pair {} "") ]
-    - control: KNil

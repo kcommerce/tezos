@@ -33,7 +33,6 @@ trace
   - [halt] (entry) @ location: 25
     [ (Pair (Pair "KT1Ln1MPvHDJ1phLL8dNL4jrKF6Q1yQCBG1v" 17 1)
             (Pair "KT1Ln1MPvHDJ1phLL8dNL4jrKF6Q1yQCBG1v" 17 2)) ]
-    - control: KCons
     - log/UNPAIR (exit) @ location: 19
       [ (Pair (Pair "KT1Ln1MPvHDJ1phLL8dNL4jrKF6Q1yQCBG1v" 17 1)
               (Pair "KT1Ln1MPvHDJ1phLL8dNL4jrKF6Q1yQCBG1v" 17 2)) ]
@@ -102,7 +101,6 @@ trace
   - [halt] (entry) @ location: 43
     [ (Pair "KT1Ln1MPvHDJ1phLL8dNL4jrKF6Q1yQCBG1v" 17 1)
       (Pair "KT1Ln1MPvHDJ1phLL8dNL4jrKF6Q1yQCBG1v" 17 2) ]
-    - control: KCons
     - log/DROP (exit) @ location: 37
       [ (Pair "KT1Ln1MPvHDJ1phLL8dNL4jrKF6Q1yQCBG1v" 17 1)
         (Pair "KT1Ln1MPvHDJ1phLL8dNL4jrKF6Q1yQCBG1v" 17 2) ]
@@ -155,7 +153,6 @@ trace
       [ (Pair "KT1Ln1MPvHDJ1phLL8dNL4jrKF6Q1yQCBG1v" 17 2) ]
   - [halt] (entry) @ location: 61
     [ (Pair "KT1Ln1MPvHDJ1phLL8dNL4jrKF6Q1yQCBG1v" 17 2) ]
-    - control: KCons
     - log/DROP (exit) @ location: 55
       [ (Pair "KT1Ln1MPvHDJ1phLL8dNL4jrKF6Q1yQCBG1v" 17 2) ]
   - DROP (entry) @ location: 61
@@ -178,4 +175,3 @@ trace
       [ (Pair {} Unit) ]
   - [halt] (entry) @ location: 7
     [ (Pair {} Unit) ]
-    - control: KNil

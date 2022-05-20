@@ -45,7 +45,6 @@ trace
       [ (Pair 1 4 2 Unit) ]
   - [halt] (entry) @ location: 27
     [ (Pair 1 4 2 Unit) ]
-    - control: KCons
     - log/DUP (exit) @ location: 21
       [ (Pair 1 4 2 Unit) ]
   - DUP (entry) @ location: 27
@@ -86,7 +85,6 @@ trace
       [ (Pair 1 4 2 Unit) ]
   - [halt] (entry) @ location: 43
     [ (Pair 1 4 2 Unit) ]
-    - control: KCons
     - log/DUP (exit) @ location: 37
       [ (Pair 1 4 2 Unit) ]
   - DUP (entry) @ location: 43
@@ -127,7 +125,6 @@ trace
       [ (Pair 1 4 2 Unit) ]
   - [halt] (entry) @ location: 59
     [ (Pair 1 4 2 Unit) ]
-    - control: KCons
     - log/DUP (exit) @ location: 53
       [ (Pair 1 4 2 Unit) ]
   - DUP (entry) @ location: 59
@@ -168,7 +165,6 @@ trace
       [ (Pair 1 4 2 Unit) ]
   - [halt] (entry) @ location: 75
     [ (Pair 1 4 2 Unit) ]
-    - control: KCons
     - log/DUP (exit) @ location: 69
       [ (Pair 1 4 2 Unit) ]
   - DUP (entry) @ location: 75
@@ -209,7 +205,6 @@ trace
       [ (Pair 1 4 2 Unit) ]
   - [halt] (entry) @ location: 89
     [ (Pair 1 4 2 Unit) ]
-    - control: KCons
     - log/DROP (exit) @ location: 83
       [ (Pair 1 4 2 Unit) ]
   - DROP (entry) @ location: 89
@@ -232,4 +227,3 @@ trace
       [ (Pair {} Unit) ]
   - [halt] (entry) @ location: 10
     [ (Pair {} Unit) ]
-    - control: KNil

@@ -19,4 +19,3 @@ trace
       [ (Pair {} 5) ]
   - [halt] (entry) @ location: 6
     [ (Pair {} 5) ]
-    - control: KNil

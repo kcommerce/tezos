@@ -23,7 +23,6 @@ trace
       [ 0 ]
   - [halt] (entry) @ location: 22
     [ 0 ]
-    - control: KCons
     - log/SOME (exit) @ location: 15
       [ 0 ]
   - SOME (entry) @ location: 22
@@ -42,4 +41,3 @@ trace
       [ (Pair {} (Some 0)) ]
   - [halt] (entry) @ location: 13
     [ (Pair {} (Some 0)) ]
-    - control: KNil

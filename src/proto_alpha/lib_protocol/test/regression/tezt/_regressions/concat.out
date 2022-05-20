@@ -35,8 +35,6 @@ trace
       [ { "efgh" } ]
   - [halt] (entry) @ location: 9
     [ { "efgh" } ]
-    - control: KUndip
-    - control: KCons
     - log/CAR (exit) @ location: 8
       [ (Pair "abcd" "efgh")
         { "efgh" } ]
@@ -67,4 +65,3 @@ trace
       [ (Pair {} "abcdefgh") ]
   - [halt] (entry) @ location: 6
     [ (Pair {} "abcdefgh") ]
-    - control: KNil

@@ -31,7 +31,6 @@ trace
     [ { 7 ; 8 ; 9 }
       {}
       { 4 ; 5 ; 6 } ]
-    - control: KIter
     - log/CONS (exit) @ location: 17
       [ 7
         {}
@@ -46,7 +45,6 @@ trace
   - [halt] (entry) @ location: 17
     [ { 7 }
       { 4 ; 5 ; 6 } ]
-    - control: KIter
     - log/CONS (exit) @ location: 17
       [ 8
         { 7 }
@@ -61,7 +59,6 @@ trace
   - [halt] (entry) @ location: 17
     [ { 8 ; 7 }
       { 4 ; 5 ; 6 } ]
-    - control: KIter
     - log/CONS (exit) @ location: 17
       [ 9
         { 8 ; 7 }
@@ -76,15 +73,12 @@ trace
   - [halt] (entry) @ location: 17
     [ { 9 ; 8 ; 7 }
       { 4 ; 5 ; 6 } ]
-    - control: KIter
-    - control: KCons
     - log/ITER (exit) @ location: 17
       [ { 9 ; 8 ; 7 }
         { 4 ; 5 ; 6 } ]
   - ITER (entry) @ location: 20
     [ { 9 ; 8 ; 7 }
       { 4 ; 5 ; 6 } ]
-    - control: KIter
     - log/CONS (exit) @ location: 20
       [ 9
         { 4 ; 5 ; 6 } ]
@@ -95,7 +89,6 @@ trace
       [ { 9 ; 4 ; 5 ; 6 } ]
   - [halt] (entry) @ location: 20
     [ { 9 ; 4 ; 5 ; 6 } ]
-    - control: KIter
     - log/CONS (exit) @ location: 20
       [ 8
         { 9 ; 4 ; 5 ; 6 } ]
@@ -106,7 +99,6 @@ trace
       [ { 8 ; 9 ; 4 ; 5 ; 6 } ]
   - [halt] (entry) @ location: 20
     [ { 8 ; 9 ; 4 ; 5 ; 6 } ]
-    - control: KIter
     - log/CONS (exit) @ location: 20
       [ 7
         { 8 ; 9 ; 4 ; 5 ; 6 } ]
@@ -117,8 +109,6 @@ trace
       [ { 7 ; 8 ; 9 ; 4 ; 5 ; 6 } ]
   - [halt] (entry) @ location: 20
     [ { 7 ; 8 ; 9 ; 4 ; 5 ; 6 } ]
-    - control: KIter
-    - control: KCons
     - log/NIL (exit) @ location: 20
       [ { 7 ; 8 ; 9 ; 4 ; 5 ; 6 } ]
   - NIL (entry) @ location: 23
@@ -133,4 +123,3 @@ trace
       [ (Pair {} { 7 ; 8 ; 9 ; 4 ; 5 ; 6 }) ]
   - [halt] (entry) @ location: 11
     [ (Pair {} { 7 ; 8 ; 9 ; 4 ; 5 ; 6 }) ]
-    - control: KNil

@@ -29,7 +29,6 @@ trace
     [ True
       { "abc" ; "def" ; "ghi" }
       {} ]
-    - control: KLoop_in
     - log/IF_CONS (exit) @ location: 16
       [ { "abc" ; "def" ; "ghi" }
         {} ]
@@ -62,8 +61,6 @@ trace
       [ { "abc" } ]
   - [halt] (entry) @ location: 23
     [ { "abc" } ]
-    - control: KUndip
-    - control: KCons
     - log/CONST (exit) @ location: 21
       [ { "def" ; "ghi" }
         { "abc" } ]
@@ -78,7 +75,6 @@ trace
     [ True
       { "def" ; "ghi" }
       { "abc" } ]
-    - control: KCons
     - log/[halt] (exit) @ location: 18
       [ True
         { "def" ; "ghi" }
@@ -87,7 +83,6 @@ trace
     [ True
       { "def" ; "ghi" }
       { "abc" } ]
-    - control: KLoop_in
     - log/IF_CONS (exit) @ location: 16
       [ { "def" ; "ghi" }
         { "abc" } ]
@@ -120,8 +115,6 @@ trace
       [ { "def" ; "abc" } ]
   - [halt] (entry) @ location: 23
     [ { "def" ; "abc" } ]
-    - control: KUndip
-    - control: KCons
     - log/CONST (exit) @ location: 21
       [ { "ghi" }
         { "def" ; "abc" } ]
@@ -136,7 +129,6 @@ trace
     [ True
       { "ghi" }
       { "def" ; "abc" } ]
-    - control: KCons
     - log/[halt] (exit) @ location: 18
       [ True
         { "ghi" }
@@ -145,7 +137,6 @@ trace
     [ True
       { "ghi" }
       { "def" ; "abc" } ]
-    - control: KLoop_in
     - log/IF_CONS (exit) @ location: 16
       [ { "ghi" }
         { "def" ; "abc" } ]
@@ -178,8 +169,6 @@ trace
       [ { "ghi" ; "def" ; "abc" } ]
   - [halt] (entry) @ location: 23
     [ { "ghi" ; "def" ; "abc" } ]
-    - control: KUndip
-    - control: KCons
     - log/CONST (exit) @ location: 21
       [ {}
         { "ghi" ; "def" ; "abc" } ]
@@ -194,7 +183,6 @@ trace
     [ True
       {}
       { "ghi" ; "def" ; "abc" } ]
-    - control: KCons
     - log/[halt] (exit) @ location: 18
       [ True
         {}
@@ -203,7 +191,6 @@ trace
     [ True
       {}
       { "ghi" ; "def" ; "abc" } ]
-    - control: KLoop_in
     - log/IF_CONS (exit) @ location: 16
       [ {}
         { "ghi" ; "def" ; "abc" } ]
@@ -228,7 +215,6 @@ trace
     [ False
       {}
       { "ghi" ; "def" ; "abc" } ]
-    - control: KCons
     - log/[halt] (exit) @ location: 18
       [ False
         {}
@@ -237,8 +223,6 @@ trace
     [ False
       {}
       { "ghi" ; "def" ; "abc" } ]
-    - control: KLoop_in
-    - control: KCons
     - log/DROP (exit) @ location: 16
       [ {}
         { "ghi" ; "def" ; "abc" } ]
@@ -259,4 +243,3 @@ trace
       [ (Pair {} { "ghi" ; "def" ; "abc" }) ]
   - [halt] (entry) @ location: 8
     [ (Pair {} { "ghi" ; "def" ; "abc" }) ]
-    - control: KNil

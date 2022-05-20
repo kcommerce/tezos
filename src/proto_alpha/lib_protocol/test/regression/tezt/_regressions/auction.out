@@ -123,7 +123,6 @@ trace
             "2099-12-31T23:59:59Z"
             50000000
             "tz1faswCTDciRzE4oJ9jn2Vm2dvjeyA9fUzU") ]
-    - control: KCons
     - log/SWAP (exit) @ location: 20
       [ "2099-12-31T23:59:59Z"
         (Pair "tz1b7tUupMgCNw2cCLpKTkSD1NZzB5TkP2sv"
@@ -206,8 +205,6 @@ trace
   - [halt] (entry) @ location: 31
     [ (Pair 50000000 "tz1faswCTDciRzE4oJ9jn2Vm2dvjeyA9fUzU")
       "2099-12-31T23:59:59Z" ]
-    - control: KUndip
-    - control: KCons
     - log/AMOUNT (exit) @ location: 29
       [ "tz1b7tUupMgCNw2cCLpKTkSD1NZzB5TkP2sv"
         (Pair 50000000 "tz1faswCTDciRzE4oJ9jn2Vm2dvjeyA9fUzU")
@@ -258,8 +255,6 @@ trace
       [ (Pair "2099-12-31T23:59:59Z" 100000000 "tz1b7tUupMgCNw2cCLpKTkSD1NZzB5TkP2sv") ]
   - [halt] (entry) @ location: 38
     [ (Pair "2099-12-31T23:59:59Z" 100000000 "tz1b7tUupMgCNw2cCLpKTkSD1NZzB5TkP2sv") ]
-    - control: KUndip
-    - control: KCons
     - log/DUP (exit) @ location: 37
       [ (Pair 50000000 "tz1faswCTDciRzE4oJ9jn2Vm2dvjeyA9fUzU")
         (Pair "2099-12-31T23:59:59Z" 100000000 "tz1b7tUupMgCNw2cCLpKTkSD1NZzB5TkP2sv") ]
@@ -314,7 +309,6 @@ trace
   - [halt] (entry) @ location: 53
     [ (Pair 50000000 "tz1faswCTDciRzE4oJ9jn2Vm2dvjeyA9fUzU")
       (Pair "2099-12-31T23:59:59Z" 100000000 "tz1b7tUupMgCNw2cCLpKTkSD1NZzB5TkP2sv") ]
-    - control: KCons
     - log/DUP (exit) @ location: 47
       [ (Pair 50000000 "tz1faswCTDciRzE4oJ9jn2Vm2dvjeyA9fUzU")
         (Pair "2099-12-31T23:59:59Z" 100000000 "tz1b7tUupMgCNw2cCLpKTkSD1NZzB5TkP2sv") ]
@@ -355,8 +349,6 @@ trace
   - [halt] (entry) @ location: 56
     [ "tz1faswCTDciRzE4oJ9jn2Vm2dvjeyA9fUzU"
       (Pair "2099-12-31T23:59:59Z" 100000000 "tz1b7tUupMgCNw2cCLpKTkSD1NZzB5TkP2sv") ]
-    - control: KUndip
-    - control: KCons
     - log/CONST (exit) @ location: 55
       [ 50000000
         "tz1faswCTDciRzE4oJ9jn2Vm2dvjeyA9fUzU"
@@ -413,4 +405,3 @@ trace
             "2099-12-31T23:59:59Z"
             100000000
             "tz1b7tUupMgCNw2cCLpKTkSD1NZzB5TkP2sv") ]
-    - control: KNil

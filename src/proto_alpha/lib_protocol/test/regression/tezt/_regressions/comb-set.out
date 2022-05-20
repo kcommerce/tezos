@@ -59,4 +59,3 @@ trace
       [ (Pair {} 2 12 8 Unit) ]
   - [halt] (entry) @ location: 10
     [ (Pair {} 2 12 8 Unit) ]
-    - control: KNil

@@ -45,23 +45,6 @@ trace
   - [halt] (entry) @ location: 22
     [ {}
       {} ]
-    - control: KCons
-    - CONST (entry) @ location: 20
-      [ {}
-        {} ]
-      - log/CONST (exit) @ location: 20
-        [ "tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx"
-          {}
-          {} ]
-    - CONST (entry) @ location: 20
-      [ "tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx"
-        {}
-        {} ]
-      - log/log/log/DIP (exit) @ location: 20
-        [ "tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx"
-          "tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx"
-          {}
-          {} ]
     - log/DIP (exit) @ location: 20
       [ "tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx"
         "tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx"
@@ -88,8 +71,6 @@ trace
     [ {}
       "tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx"
       {} ]
-    - control: KUndip
-    - control: KCons
     - log/GET (exit) @ location: 25
       [ "tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx"
         {}
@@ -130,8 +111,6 @@ trace
   - [halt] (entry) @ location: 33
     [ (Some 0)
       {} ]
-    - control: KUndip
-    - control: KCons
     - log/UPDATE (exit) @ location: 32
       [ "tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx"
         (Some 0)
@@ -154,14 +133,11 @@ trace
       [ (Pair {} { Elt "tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx" 0 }) ]
   - [halt] (entry) @ location: 14
     [ (Pair {} { Elt "tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx" 0 }) ]
-    - control: KCons
     - log/[halt] (exit) @ location: 30
       [ (Pair {} { Elt "tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx" 0 }) ]
   - [halt] (entry) @ location: 14
     [ (Pair {} { Elt "tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx" 0 }) ]
-    - control: KCons
     - log/[halt] (exit) @ location: 17
       [ (Pair {} { Elt "tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx" 0 }) ]
   - [halt] (entry) @ location: 14
     [ (Pair {} { Elt "tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx" 0 }) ]
-    - control: KNil

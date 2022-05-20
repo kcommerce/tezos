@@ -31,8 +31,6 @@ trace
   - [halt] (entry) @ location: 19
     [ 0x0507070707010000000361626302000000060001000200030200000006000400050006
       0x0507070707010000000361626302000000060001000200030200000006000400050006 ]
-    - control: KUndip
-    - control: KCons
     - log/PACK (exit) @ location: 17
       [ (Pair (Pair "abc" { 1 ; 2 ; 3 }) { 4 ; 5 ; 6 })
         0x0507070707010000000361626302000000060001000200030200000006000400050006
@@ -65,7 +63,6 @@ trace
       [ 0x0507070707010000000361626302000000060001000200030200000006000400050006 ]
   - [halt] (entry) @ location: 31
     [ 0x0507070707010000000361626302000000060001000200030200000006000400050006 ]
-    - control: KCons
     - log/UNPACK (exit) @ location: 25
       [ 0x0507070707010000000361626302000000060001000200030200000006000400050006 ]
   - UNPACK (entry) @ location: 31
@@ -78,7 +75,6 @@ trace
       [ (Pair (Pair "abc" { 1 ; 2 ; 3 }) { 4 ; 5 ; 6 }) ]
   - [halt] (entry) @ location: 46
     [ (Pair (Pair "abc" { 1 ; 2 ; 3 }) { 4 ; 5 ; 6 }) ]
-    - control: KCons
     - log/DROP (exit) @ location: 40
       [ (Pair (Pair "abc" { 1 ; 2 ; 3 }) { 4 ; 5 ; 6 }) ]
   - DROP (entry) @ location: 46
@@ -101,4 +97,3 @@ trace
       [ (Pair {} Unit) ]
   - [halt] (entry) @ location: 14
     [ (Pair {} Unit) ]
-    - control: KNil

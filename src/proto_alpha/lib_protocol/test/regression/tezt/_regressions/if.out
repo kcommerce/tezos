@@ -17,7 +17,6 @@ trace
       [ True ]
   - [halt] (entry) @ location: 18
     [ True ]
-    - control: KCons
     - log/SOME (exit) @ location: 9
       [ True ]
   - SOME (entry) @ location: 18
@@ -36,4 +35,3 @@ trace
       [ (Pair {} (Some True)) ]
   - [halt] (entry) @ location: 7
     [ (Pair {} (Some True)) ]
-    - control: KNil

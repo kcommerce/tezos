@@ -89,8 +89,6 @@ trace
       [  ]
   - [halt] (entry) @ location: 23
     [  ]
-    - control: KUndip
-    - control: KCons
     - log/NIL (exit) @ location: 22
       [ 4 ]
   - NIL (entry) @ location: 28
@@ -105,4 +103,3 @@ trace
       [ (Pair {} 4) ]
   - [halt] (entry) @ location: 14
     [ (Pair {} 4) ]
-    - control: KNil

@@ -55,7 +55,6 @@ trace
       [ "tz1faswCTDciRzE4oJ9jn2Vm2dvjeyA9fUzU" ]
   - [halt] (entry) @ location: 24
     [ "tz1faswCTDciRzE4oJ9jn2Vm2dvjeyA9fUzU" ]
-    - control: KCons
     - log/IMPLICIT_ACCOUNT (exit) @ location: 18
       [ "tz1faswCTDciRzE4oJ9jn2Vm2dvjeyA9fUzU" ]
   - IMPLICIT_ACCOUNT (entry) @ location: 24
@@ -106,8 +105,6 @@ trace
       [ "2022-04-14T12:32:39Z" ]
   - [halt] (entry) @ location: 36
     [ "2022-04-14T12:32:39Z" ]
-    - control: KUndip
-    - control: KCons
     - log/PAIR (exit) @ location: 34
       [ { 0x00000000000000000000000000000000000000000000000001c0843d0000dac9f52543da1aed0bc1d6b46bf7c10db7014cd600 }
         "2022-04-14T12:32:39Z" ]
@@ -120,4 +117,3 @@ trace
   - [halt] (entry) @ location: 6
     [ (Pair { 0x00000000000000000000000000000000000000000000000001c0843d0000dac9f52543da1aed0bc1d6b46bf7c10db7014cd600 }
             "2022-04-14T12:32:39Z") ]
-    - control: KNil

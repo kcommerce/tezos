@@ -21,7 +21,6 @@ trace
       [ (Pair "KT1Ln1MPvHDJ1phLL8dNL4jrKF6Q1yQCBG1v" 17 3) ]
   - [halt] (entry) @ location: 24
     [ (Pair "KT1Ln1MPvHDJ1phLL8dNL4jrKF6Q1yQCBG1v" 17 3) ]
-    - control: KCons
     - log/SOME (exit) @ location: 12
       [ (Pair "KT1Ln1MPvHDJ1phLL8dNL4jrKF6Q1yQCBG1v" 17 3) ]
   - SOME (entry) @ location: 24
@@ -40,4 +39,3 @@ trace
       [ (Pair {} (Some (Pair "KT1Ln1MPvHDJ1phLL8dNL4jrKF6Q1yQCBG1v" 17 3))) ]
   - [halt] (entry) @ location: 9
     [ (Pair {} (Some (Pair "KT1Ln1MPvHDJ1phLL8dNL4jrKF6Q1yQCBG1v" 17 3))) ]
-    - control: KNil
