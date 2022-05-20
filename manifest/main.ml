@@ -316,7 +316,7 @@ let ledgerwallet_tezos = vendored_lib "ledgerwallet-tezos"
 
 let pyml_plot = vendored_lib "pyml-plot"
 
-let _polynomial = vendored_lib "polynomial"
+let polynomial = vendored_lib "polynomial"
 
 (* INTERNAL LIBS *)
 
@@ -743,6 +743,21 @@ let _tezos_crypto_tests_unix =
         lwt_unix;
         qcheck_alcotest;
         tezos_test_helpers;
+      ]
+
+let _tezos_crypto_das =
+  public_lib
+    "tezos-crypto.das"
+    ~path:"src/lib_crypto/das"
+    ~opam:"tezos-crypto"
+    ~deps:
+      [
+        tezos_stdlib |> open_;
+        tezos_error_monad |> open_;
+        data_encoding |> open_;
+        alcotest;
+        qcheck_alcotest;
+        polynomial;
       ]
 
 let tezos_event_logging =
