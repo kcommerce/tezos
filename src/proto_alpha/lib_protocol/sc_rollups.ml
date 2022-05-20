@@ -124,14 +124,8 @@ let pvm_with_proof_encoding =
     ~tag_size:`Uint8
     [
       case
-        ~title:"Unencodable PVM with proof"
-        (Tag 0)
-        unit
-        (function Unencodable _ -> Some () | _ -> None)
-        (fun () -> assert false);
-      case
         ~title:"Arithmetic PVM with proof"
-        (Tag 1)
+        (Tag 0)
         Sc_rollup_arith.ProtocolImplementation.proof_encoding
         (function
           | Arith_pvm_with_proof pvm ->

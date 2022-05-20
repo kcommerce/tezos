@@ -23,8 +23,8 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-open Alpha_context
-open Sc_rollup
+open Sc_rollup_repr
+module PS = Sc_rollup_PVM_sem
 
 module type P = sig
   module Tree : Context.TREE with type key = string list and type value = bytes
@@ -51,7 +51,7 @@ module type P = sig
 end
 
 module type S = sig
-  include Sc_rollup_PVM_sem.S
+  include PS.S
 
   val name : string
 
@@ -61,7 +61,7 @@ module type S = sig
 
   val pp : state -> (Format.formatter -> unit -> unit) Lwt.t
 
-  val get_tick : state -> Sc_rollup.Tick.t Lwt.t
+  val get_tick : state -> Sc_rollup_tick_repr.t Lwt.t
 
   type status = Halted | WaitingForInputMessage | Parsing | Evaluating
 
@@ -103,7 +103,11 @@ module Make (Context : P) :
 
   let proof_start_state = Context.proof_start_state
 
-  let proof_stop_state = Context.proof_stop_state
+  let proof_stop_state p = Some (Context.proof_stop_state p)
+
+  let proof_input_requested _ = PS.No_input_required
+
+  let proof_input_given _ = None
 
   let name = "arith"
 
@@ -138,7 +142,7 @@ module Make (Context : P) :
 
      Here is the data model of this state represented in the tree:
 
-     - tick : Tick.t
+     - tick : Sc_rollup_tick_repr.t
        The current tick counter of the machine.
      - status : status
        The current status of the machine.
@@ -418,7 +422,7 @@ module Make (Context : P) :
     end
 
     module CurrentTick = MakeVar (struct
-      include Tick
+      include Sc_rollup_tick_repr
 
       let name = "tick"
     end)
@@ -509,15 +513,15 @@ module Make (Context : P) :
     end)
 
     module CurrentLevel = MakeVar (struct
-      type t = Raw_level.t
+      type t = Raw_level_repr.t
 
-      let initial = Raw_level.root
+      let initial = Raw_level_repr.root
 
-      let encoding = Raw_level.encoding
+      let encoding = Raw_level_repr.encoding
 
       let name = "current_level"
 
-      let pp = Raw_level.pp
+      let pp = Raw_level_repr.pp
     end)
 
     module MessageCounter = MakeVar (struct
@@ -702,7 +706,7 @@ module Make (Context : P) :
     let* s, _ = run m state in
     return s
 
-  let get_tick = result_of ~default:Tick.initial CurrentTick.get
+  let get_tick = result_of ~default:Sc_rollup_tick_repr.initial CurrentTick.get
 
   let is_input_state_monadic =
     let open Monad.Syntax in
@@ -711,10 +715,11 @@ module Make (Context : P) :
     | WaitingForInputMessage ->
         let* level = CurrentLevel.get in
         let* counter = MessageCounter.get in
-        return (Some (level, counter))
-    | _ -> return None
+        return (PS.First_after (level, counter))
+    | _ -> return PS.No_input_required
 
-  let is_input_state = result_of ~default:None @@ is_input_state_monadic
+  let is_input_state =
+    result_of ~default:PS.No_input_required @@ is_input_state_monadic
 
   let get_status = result_of ~default:WaitingForInputMessage @@ Status.get
 
@@ -731,7 +736,7 @@ module Make (Context : P) :
   let get_is_stuck = result_of ~default:None @@ is_stuck
 
   let set_input_monadic input =
-    let open Sc_rollup_PVM_sem in
+    let open PS in
     let {inbox_level; message_counter; payload} = input in
     let open Monad.Syntax in
     let* boot_sector = Boot_sector.get in
@@ -747,10 +752,10 @@ module Make (Context : P) :
     let does_not_follow =
       internal_error "The input message does not follow the previous one."
     in
-    if Raw_level.(equal last_level inbox_level) then
+    if Raw_level_repr.(equal last_level inbox_level) then
       if Z.(equal message_counter (succ last_counter)) then update
       else does_not_follow
-    else if Raw_level.(last_level < inbox_level) then
+    else if Raw_level_repr.(last_level < inbox_level) then
       if Z.(equal message_counter Z.zero) then update else does_not_follow
     else does_not_follow
 
@@ -945,13 +950,14 @@ module Make (Context : P) :
   let ticked m =
     let open Monad.Syntax in
     let* tick = CurrentTick.get in
-    let* () = CurrentTick.set (Tick.next tick) in
+    let* () = CurrentTick.set (Sc_rollup_tick_repr.next tick) in
     m
 
   let eval state = state_of (ticked eval_step) state
 
-  let verify_proof ~input proof =
+  let verify_proof proof =
     let open Lwt_syntax in
+    let input = proof_input_given proof in
     let transition state =
       let* state =
         match input with

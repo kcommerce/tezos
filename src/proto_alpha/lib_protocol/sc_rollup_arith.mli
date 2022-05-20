@@ -53,7 +53,6 @@
    The machine exposes extra operations to be used in the rollup node.
 
 *)
-open Alpha_context
 
 module type S = sig
   include Sc_rollup_PVM_sem.S
@@ -73,7 +72,7 @@ module type S = sig
   val pp : state -> (Format.formatter -> unit -> unit) Lwt.t
 
   (** [get_tick state] returns the current tick of [state]. *)
-  val get_tick : state -> Sc_rollup.Tick.t Lwt.t
+  val get_tick : state -> Sc_rollup_tick_repr.t Lwt.t
 
   (** The machine has three possible states: *)
   type status = Halted | WaitingForInputMessage | Parsing | Evaluating
@@ -133,9 +132,9 @@ module type P = sig
 
   val proof_encoding : proof Data_encoding.t
 
-  val proof_start_state : proof -> Sc_rollup.State_hash.t
+  val proof_start_state : proof -> Sc_rollup_repr.State_hash.t
 
-  val proof_stop_state : proof -> Sc_rollup.State_hash.t
+  val proof_stop_state : proof -> Sc_rollup_repr.State_hash.t
 
   val verify_proof :
     proof ->

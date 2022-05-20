@@ -81,10 +81,13 @@ let valid snapshot commit_level proof =
           inbox_proof
     | _ -> fail ()
   in
-  let input_given_equal =
-    Option.equal
-      Sc_rollup_PVM_sem.input_equal
-      (Option.bind input (cut_at_level commit_level))
-      input_given
+  let* _ =
+    if
+      Option.equal
+        Sc_rollup_PVM_sem.input_equal
+        (Option.bind input (cut_at_level commit_level))
+        input_given
+    then return ()
+    else fail ()
   in
-  return input_given_equal
+  P.verify_proof P.proof
