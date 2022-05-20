@@ -654,43 +654,48 @@ let cement_commitment ctxt rollup new_lcc =
   let* old_lcc, ctxt = last_cemented_commitment ctxt rollup in
   (* Get is safe, as [Stakers_size] is initialized on origination. *)
   let* ctxt, total_staker_count = Store.Staker_count.get ctxt rollup in
-  if Compare.Int32.(total_staker_count <= 0l) then fail Sc_rollup_no_stakers
-  else
-    let* new_lcc_commitment, ctxt =
-      get_commitment_internal ctxt rollup new_lcc
-    in
-    let* ctxt, new_lcc_added =
-      Store.Commitment_added.get (ctxt, rollup) new_lcc
-    in
-    if Commitment_hash.(new_lcc_commitment.predecessor <> old_lcc) then
-      fail Sc_rollup_parent_not_lcc
-    else
-      let* new_lcc_stake_count, ctxt =
-        get_commitment_stake_count ctxt rollup new_lcc
-      in
-      if Compare.Int32.(total_staker_count <> new_lcc_stake_count) then
-        fail Sc_rollup_disputed
-      else if
-        let level = (Raw_context.current_level ctxt).level in
-        Raw_level_repr.(level < add new_lcc_added refutation_deadline_blocks)
-      then fail Sc_rollup_too_recent
-      else
-        (* update LCC *)
-        let* ctxt, lcc_size_diff =
-          Store.Last_cemented_commitment.update ctxt rollup new_lcc
-        in
-        assert (Compare.Int.(lcc_size_diff = 0)) ;
-        (* At this point we know all stakers are implicitly staked
-           on the new LCC, and no one is directly staked on the old LCC. We
-           can safely deallocate the old LCC.
-        *)
-        let* ctxt = deallocate ctxt rollup old_lcc in
-        consume_n_messages
-          ctxt
-          rollup
-          (Int32.to_int
-          @@ Sc_rollup_repr.Number_of_messages.to_int32
-               new_lcc_commitment.number_of_messages)
+  let* () =
+    fail_when Compare.Int32.(total_staker_count <= 0l) Sc_rollup_no_stakers
+  in
+  let* new_lcc_commitment, ctxt = get_commitment_internal ctxt rollup new_lcc in
+  let* ctxt, new_lcc_added =
+    Store.Commitment_added.get (ctxt, rollup) new_lcc
+  in
+  let* () =
+    fail_when
+      Commitment_hash.(new_lcc_commitment.predecessor <> old_lcc)
+      Sc_rollup_parent_not_lcc
+  in
+  let* new_lcc_stake_count, ctxt =
+    get_commitment_stake_count ctxt rollup new_lcc
+  in
+  let* () =
+    fail_when
+      Compare.Int32.(total_staker_count <> new_lcc_stake_count)
+      Sc_rollup_disputed
+  in
+  let* () =
+    fail_when
+      (let level = (Raw_context.current_level ctxt).level in
+       Raw_level_repr.(level < add new_lcc_added refutation_deadline_blocks))
+      Sc_rollup_too_recent
+  in
+  (* update LCC *)
+  let* ctxt, lcc_size_diff =
+    Store.Last_cemented_commitment.update ctxt rollup new_lcc
+  in
+  assert (Compare.Int.(lcc_size_diff = 0)) ;
+  (* At this point we know all stakers are implicitly staked
+     on the new LCC, and no one is directly staked on the old LCC. We
+     can safely deallocate the old LCC.
+  *)
+  let* ctxt = deallocate ctxt rollup old_lcc in
+  consume_n_messages
+    ctxt
+    rollup
+    (Int32.to_int
+    @@ Sc_rollup_repr.Number_of_messages.to_int32
+         new_lcc_commitment.number_of_messages)
 
 type conflict_point = Commitment_hash.t * Commitment_hash.t
 
