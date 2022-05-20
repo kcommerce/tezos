@@ -745,7 +745,7 @@ let _tezos_crypto_tests_unix =
         tezos_test_helpers;
       ]
 
-let _tezos_crypto_das =
+let tezos_crypto_das =
   public_lib
     "tezos-crypto.das"
     ~path:"src/lib_crypto/das"
@@ -753,6 +753,22 @@ let _tezos_crypto_das =
     ~deps:
       [
         tezos_stdlib |> open_;
+        tezos_error_monad |> open_;
+        data_encoding |> open_;
+        alcotest;
+        qcheck_alcotest;
+        polynomial;
+      ]
+
+let _tezos_crypto_das_tests =
+  tests
+    ["test_das_cryptobox"]
+    ~path:"src/lib_crypto/das/test"
+    ~opam:"tezos-crypto"
+    ~deps:
+      [
+        tezos_stdlib |> open_;
+        tezos_crypto_das |> open_;
         tezos_error_monad |> open_;
         data_encoding |> open_;
         alcotest;
