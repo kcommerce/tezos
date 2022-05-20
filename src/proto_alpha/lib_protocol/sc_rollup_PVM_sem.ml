@@ -83,7 +83,44 @@ module type S = sig
   type state
 
   (** During interactive rejection games, a player may need to
-      provide a proof that a given execution step is valid. *)
+      provide a proof that a given execution step is valid. The PVM
+      implementation is responsible for ensuring that this proof type
+      has the correct semantics:
+
+        A proof [p] has four parameters:
+
+          [start_hash := proof_start_state p]
+          [stop_hash := proof_stop_state p]
+          [input_requested := proof_input_requested p]
+          [input_given := proof_input_given p]
+
+        The following predicate must hold of a valid proof:
+
+          [exists start_state, stop_state.
+               (state_hash start_state == start_hash)
+           AND (Option.map state_hash stop_state == stop_hash)
+           AND (is_input_state start_state == input_requested)
+           AND (match (input_given, input_requested) with
+                | (None, No_input_required) -> eval start_state == stop_state
+                | (None, _) -> stop_state == None
+                | (Some input, No_input_required) -> false
+                | (Some input, _) -> set_input input start_state == stop_state)]
+
+      In natural language---the two hash parameters [start_hash] and
+      [stop_hash] must have actual [state] values (or possibly [None] in
+      the case of [stop_hash]) of which they are the hashes. The
+      [input_requested] parameter must be the correct request from the
+      [start_hash], given according to [is_input_state]. Finally there
+      are four possibilities of [input_requested] and [input_given].
+
+      - if no input is required, or given, the proof is a simple [eval]
+        step ;
+      - if input was required but not given, the [stop_hash] must be
+        [None] (the machine is blocked) ;
+      - if no input was required but some was given, this makes no sense
+        and the proof is simply invalid ;
+      - finally, if input was required and given the proof is a
+        [set_input] step. *)
   type proof
 
   val proof_encoding : proof Data_encoding.t
@@ -139,10 +176,6 @@ module type S = sig
        execution of an atomic step of the rollup at state [s0]. *)
   val eval : state -> state Lwt.t
 
-  (** This checks the proof. The proof contains four parameters, start
-      state, stop state, input requested and input given. As well as
-      running [verify_proof], the refutation game must check that those
-      four parameters correspond correctly to the refutation game itself
-      and the inbox proof. *)
+  (** This checks the proof. See the doc-string for the [proof] type. *)
   val verify_proof : proof -> bool Lwt.t
 end
