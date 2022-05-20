@@ -495,15 +495,18 @@ let withdraw_stake ctxt rollup staker =
   match res with
   | None -> fail Sc_rollup_not_staked
   | Some staked_on_commitment ->
-      if Commitment_hash.(staked_on_commitment = lcc) then
-        (* TODO: https://gitlab.com/tezos/tezos/-/issues/2449
-           We should refund stake here.
-        *)
-        let* ctxt, _size_freed =
-          Store.Stakers.remove_existing (ctxt, rollup) staker
-        in
-        modify_staker_count ctxt rollup Int32.pred
-      else fail Sc_rollup_not_staked_on_lcc
+      let* () =
+        fail_unless
+          Commitment_hash.(staked_on_commitment = lcc)
+          Sc_rollup_not_staked_on_lcc
+      in
+      (* TODO: https://gitlab.com/tezos/tezos/-/issues/2449
+         We should refund stake here.
+      *)
+      let* ctxt, _size_freed =
+        Store.Stakers.remove_existing (ctxt, rollup) staker
+      in
+      modify_staker_count ctxt rollup Int32.pred
 
 let assert_commitment_not_too_far_ahead ctxt rollup lcc commitment =
   let open Lwt_tzresult_syntax in
@@ -516,14 +519,16 @@ let assert_commitment_not_too_far_ahead ctxt rollup lcc commitment =
       return (ctxt, Commitment.(lcc.inbox_level))
   in
   let max_level = Commitment.(commitment.inbox_level) in
-  if
-    let sc_rollup_max_lookahead =
-      Constants_storage.sc_rollup_max_lookahead_in_blocks ctxt
-    in
-    Compare.Int32.(
-      sc_rollup_max_lookahead < Raw_level_repr.diff max_level min_level)
-  then fail Sc_rollup_too_far_ahead
-  else return ctxt
+  let* () =
+    fail_when
+      (let sc_rollup_max_lookahead =
+         Constants_storage.sc_rollup_max_lookahead_in_blocks ctxt
+       in
+       Compare.Int32.(
+         sc_rollup_max_lookahead < Raw_level_repr.diff max_level min_level))
+      Sc_rollup_too_far_ahead
+  in
+  return ctxt
 
 (** Enfore that a commitment's inbox level increases by an exact fixed amount over its predecessor.
     This property is used in several places - not obeying it causes severe breakage.
@@ -561,11 +566,13 @@ let assert_commitment_frequency ctxt rollup commitment =
   let sc_rollup_commitment_frequency =
     Constants_storage.sc_rollup_commitment_frequency_in_blocks ctxt
   in
-  if
-    Raw_level_repr.(
-      commitment.inbox_level = add pred_level sc_rollup_commitment_frequency)
-  then return ctxt
-  else fail Sc_rollup_bad_inbox_level
+  let* () =
+    fail_unless
+      Raw_level_repr.(
+        commitment.inbox_level = add pred_level sc_rollup_commitment_frequency)
+      Sc_rollup_bad_inbox_level
+  in
+  return ctxt
 
 (** Check invariants on [inbox_level], enforcing overallocation of storage and
     regularity of block prorudction.
@@ -623,12 +630,13 @@ let refine_stake ctxt rollup staker commitment =
       assert (Compare.Int.(size_diff = 0 || size_diff = expected_size_diff)) ;
       return (new_hash, commitment_added_level, ctxt)
       (* See WARNING above. *))
-    else if Commitment_hash.(node = lcc) then
-      (* We reached the LCC, but [staker] is not staked directly on it.
-         Thus, we backtracked. Note that everyone is staked indirectly on
-         the LCC. *)
-      fail Sc_rollup_staker_backtracked
     else
+      let* () =
+        (* We reached the LCC, but [staker] is not staked directly on it.
+           Thus, we backtracked. Note that everyone is staked indirectly on
+           the LCC. *)
+        fail_when Commitment_hash.(node = lcc) Sc_rollup_staker_backtracked
+      in
       let* pred, ctxt = get_predecessor ctxt rollup node in
       let* _size, ctxt = increase_commitment_stake_count ctxt rollup node in
       (go [@ocaml.tailcall]) pred ctxt
@@ -753,26 +761,27 @@ let get_conflict_point ctxt rollup staker1 staker2 =
      We use this fact in the following to efficiently traverse both commitment histories towards
      the conflict points. *)
   let rec traverse_in_parallel ctxt commit1 commit2 =
-    if Commitment_hash.(commit1 = commit2) then
-      (* This case will most dominantly happen when either commit is part of the other's history.
-         It occurs when the commit that is farther ahead gets dereferenced to its predecessor often
-         enough to land at the other commit. *)
-      fail Sc_rollup_no_conflict
+    let* () =
+      fail_when
+        (* This case will most dominantly happen when either commit is part of the other's history.
+           It occurs when the commit that is farther ahead gets dereferenced to its predecessor often
+           enough to land at the other commit. *)
+        Commitment_hash.(commit1 = commit2)
+        Sc_rollup_no_conflict
+    in
+    let* commit1_info, ctxt = get_commitment_internal ctxt rollup commit1 in
+    let* commit2_info, ctxt = get_commitment_internal ctxt rollup commit2 in
+    assert (Raw_level_repr.(commit1_info.inbox_level = commit2_info.inbox_level)) ;
+    if Commitment_hash.(commit1_info.predecessor = commit2_info.predecessor)
+    then
+      (* Same predecessor means we've found the conflict points. *)
+      return ((commit1, commit2), ctxt)
     else
-      let* commit1_info, ctxt = get_commitment_internal ctxt rollup commit1 in
-      let* commit2_info, ctxt = get_commitment_internal ctxt rollup commit2 in
-      assert (
-        Raw_level_repr.(commit1_info.inbox_level = commit2_info.inbox_level)) ;
-      if Commitment_hash.(commit1_info.predecessor = commit2_info.predecessor)
-      then
-        (* Same predecessor means we've found the conflict points. *)
-        return ((commit1, commit2), ctxt)
-      else
-        (* Different predecessors means they run in parallel. *)
-        (traverse_in_parallel [@ocaml.tailcall])
-          ctxt
-          commit1_info.predecessor
-          commit2_info.predecessor
+      (* Different predecessors means they run in parallel. *)
+      (traverse_in_parallel [@ocaml.tailcall])
+        ctxt
+        commit1_info.predecessor
+        commit2_info.predecessor
   in
   traverse_in_parallel ctxt commit1 commit2
 
@@ -783,20 +792,21 @@ let remove_staker ctxt rollup staker =
   match res with
   | None -> fail Sc_rollup_not_staked
   | Some staked_on ->
-      if Commitment_hash.(staked_on = lcc) then fail Sc_rollup_remove_lcc
-      else
-        let* ctxt, _size_diff =
-          Store.Stakers.remove_existing (ctxt, rollup) staker
-        in
-        let* ctxt = modify_staker_count ctxt rollup Int32.pred in
-        let rec go node ctxt =
-          if Commitment_hash.(node = lcc) then return ctxt
-          else
-            let* pred, ctxt = get_predecessor ctxt rollup node in
-            let* ctxt = decrease_commitment_stake_count ctxt rollup node in
-            (go [@ocaml.tailcall]) pred ctxt
-        in
-        go staked_on ctxt
+      let* () =
+        fail_when Commitment_hash.(staked_on = lcc) Sc_rollup_remove_lcc
+      in
+      let* ctxt, _size_diff =
+        Store.Stakers.remove_existing (ctxt, rollup) staker
+      in
+      let* ctxt = modify_staker_count ctxt rollup Int32.pred in
+      let rec go node ctxt =
+        if Commitment_hash.(node = lcc) then return ctxt
+        else
+          let* pred, ctxt = get_predecessor ctxt rollup node in
+          let* ctxt = decrease_commitment_stake_count ctxt rollup node in
+          (go [@ocaml.tailcall]) pred ctxt
+      in
+      go staked_on ctxt
 
 let list ctxt = Store.PVM_kind.keys ctxt >|= Result.return
 
@@ -871,10 +881,11 @@ let update_game ctxt rollup ~player ~opponent refutation =
   let* game, ctxt =
     get_or_init_game ctxt rollup ~refuter:player ~defender:opponent
   in
-  let* _ =
-    let turn = match game.turn with Alice -> alice | Bob -> bob in
-    if Sc_rollup_repr.Staker.equal turn player then return ()
-    else fail Sc_rollup_wrong_turn
+  let* () =
+    fail_unless
+      (let turn = match game.turn with Alice -> alice | Bob -> bob in
+       Sc_rollup_repr.Staker.equal turn player)
+      Sc_rollup_wrong_turn
   in
   match Sc_rollup_game_repr.play game refutation with
   | Either.Left outcome -> return (Some outcome, ctxt)
@@ -900,9 +911,12 @@ let timeout ctxt rollup stakers =
       let* ctxt, timeout_level =
         Store.Game_timeout.get (ctxt, rollup) (alice, bob)
       in
-      if Raw_level_repr.(level > timeout_level) then
-        return (Sc_rollup_game_repr.{loser = game.turn; reason = Timeout}, ctxt)
-      else fail Sc_rollup_timeout_level_not_reached
+      let* () =
+        fail_unless
+          Raw_level_repr.(level > timeout_level)
+          Sc_rollup_timeout_level_not_reached
+      in
+      return (Sc_rollup_game_repr.{loser = game.turn; reason = Timeout}, ctxt)
 
 (* TODO: #2926 this requires carbonation *)
 let apply_outcome ctxt rollup stakers (outcome : Sc_rollup_game_repr.outcome) =
