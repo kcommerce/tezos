@@ -280,7 +280,9 @@ let test_challenge_window_period_boundaries () =
           Assert.test_error_encodings e ;
           return_unit
       | _ ->
-          failwith "It should not be possible to cement a contested commitment."
+          failwith
+            "It should not be possible to cement a commitment before waiting \
+             the challenge window."
     in
     commit_and_cement_after_n_bloc
       ~expect_failure
